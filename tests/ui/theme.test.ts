@@ -1,4 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('chalk', () => {
+  const chalkFn = (text: string) => text;
+  const hexFn = () => chalkFn;
+  return {
+    default: {
+      hex: hexFn,
+      green: chalkFn,
+      red: chalkFn,
+      yellow: chalkFn,
+      blue: chalkFn,
+      dim: chalkFn,
+      bold: chalkFn,
+    },
+  };
+});
+
 import {
   colors,
   formatError,
