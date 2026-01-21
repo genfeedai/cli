@@ -1,0 +1,68 @@
+import { ofetch } from 'ofetch';
+import { getApiKey, getApiUrl } from '../config/store.js';
+import { ApiError, AuthError } from '../utils/errors.js';
+
+export interface ApiResponse<T> {
+  data: T;
+  meta?: Record<string, unknown>;
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  message: string;
+  statusCode: number;
+}
+
+function createClient() {
+  return ofetch.create({
+    baseURL: getApiUrl(),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    async onRequest({ options }) {
+      const apiKey = getApiKey();
+      if (apiKey) {
+        options.headers = new Headers(options.headers as unknown as Record<string, string>);
+        options.headers.set('Authorization', `Bearer ${apiKey}`);
+      }
+    },
+    async onResponseError({ response }) {
+      const body = response._data as ApiErrorResponse | undefined;
+
+      if (response.status === 401) {
+        throw new AuthError(body?.message ?? 'Invalid or expired API key');
+      }
+
+      if (response.status === 403) {
+        throw new ApiError(
+          body?.message ?? 'Access denied',
+          response.status,
+          'Check your API key has the required scopes'
+        );
+      }
+
+      throw new ApiError(
+        body?.message ?? `Request failed with status ${response.status}`,
+        response.status
+      );
+    },
+  });
+}
+
+export async function get<T>(path: string): Promise<T> {
+  const client = createClient();
+  return client<T>(path, { method: 'GET' });
+}
+
+export async function post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+  const client = createClient();
+  return client<T>(path, { method: 'POST', body });
+}
+
+export async function requireAuth(): Promise<string> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new AuthError();
+  }
+  return apiKey;
+}
