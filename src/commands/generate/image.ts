@@ -7,7 +7,7 @@ import { createImage, getImage, type Image } from '../../api/images.js';
 import { getActiveBrand, getDefaultImageModel } from '../../config/store.js';
 import { formatLabel } from '../../ui/theme.js';
 import { handleError, NoBrandError } from '../../utils/errors.js';
-import { poll } from '../../utils/polling.js';
+import { waitForCompletion } from '../../utils/websocket.js';
 
 export const imageCommand = new Command('image')
   .description('Generate an AI image')
@@ -57,14 +57,13 @@ export const imageCommand = new Command('image')
 
       spinner.text = 'Generating image...';
 
-      // Poll for completion
-      const { result, elapsed } = await poll<Image>({
-        fn: () => getImage(image.id),
-        isComplete: (img) => img.status === 'completed',
-        isFailed: (img) => img.status === 'failed',
-        getError: (img) => img.error,
+      // Wait for completion via WebSocket
+      const { result, elapsed } = await waitForCompletion<Image>({
+        taskId: image.id,
+        taskType: 'IMAGE',
+        getResult: () => getImage(image.id),
         spinner,
-        interval: 2000,
+        timeout: 300000, // 5 minute timeout for images
       });
 
       const elapsedSec = (elapsed / 1000).toFixed(1);

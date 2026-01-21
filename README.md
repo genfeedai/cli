@@ -1,5 +1,9 @@
 # @genfeedai/cli
 
+[![npm version](https://img.shields.io/npm/v/@genfeedai/cli.svg)](https://www.npmjs.com/package/@genfeedai/cli)
+[![CI](https://github.com/genfeedai/cli/actions/workflows/ci.yml/badge.svg)](https://github.com/genfeedai/cli/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ```
    ___            __             _    ___ _    ___
   / __|___ _ _   / _|___ ___ ___| |  / __| |  |_ _|
@@ -10,6 +14,11 @@
 ```
 
 CLI tool for [Genfeed.ai](https://genfeed.ai) - Generate AI images and videos from your terminal.
+
+## Requirements
+
+- Node.js 18+
+- A [Genfeed.ai](https://genfeed.ai) account with API access
 
 ## Installation
 
@@ -207,6 +216,10 @@ Config is stored in `~/.config/genfeed/config.json`:
   }
 }
 ```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 

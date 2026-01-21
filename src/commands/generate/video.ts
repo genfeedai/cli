@@ -7,7 +7,7 @@ import { createVideo, getVideo, type Video } from '../../api/videos.js';
 import { getActiveBrand, getDefaultVideoModel } from '../../config/store.js';
 import { formatLabel } from '../../ui/theme.js';
 import { handleError, NoBrandError } from '../../utils/errors.js';
-import { poll } from '../../utils/polling.js';
+import { waitForCompletion } from '../../utils/websocket.js';
 
 export const videoCommand = new Command('video')
   .description('Generate an AI video')
@@ -57,14 +57,12 @@ export const videoCommand = new Command('video')
 
       spinner.text = 'Generating video...';
 
-      // Poll for completion (videos take longer, poll less frequently)
-      const { result, elapsed } = await poll<Video>({
-        fn: () => getVideo(video.id),
-        isComplete: (v) => v.status === 'completed',
-        isFailed: (v) => v.status === 'failed',
-        getError: (v) => v.error,
+      // Wait for completion via WebSocket
+      const { result, elapsed } = await waitForCompletion<Video>({
+        taskId: video.id,
+        taskType: 'VIDEO',
+        getResult: () => getVideo(video.id),
         spinner,
-        interval: 5000, // Poll every 5s for videos
         timeout: 600000, // 10 minute timeout for videos
       });
 
