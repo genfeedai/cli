@@ -69,10 +69,10 @@ describe('utils/polling', () => {
         interval: 1000,
       });
 
-      // Advance past timeout
-      await vi.advanceTimersByTimeAsync(6000);
-
+      // Advance past timeout and expect rejection together
+      const advancePromise = vi.advanceTimersByTimeAsync(6000);
       await expect(pollPromise).rejects.toThrow('Operation timed out');
+      await advancePromise;
     });
 
     it('throws when isFailed returns true', async () => {
@@ -81,7 +81,7 @@ describe('utils/polling', () => {
       const isFailed = (result: { status: string }) => result.status === 'error';
 
       const pollPromise = poll({ fn, isComplete, isFailed });
-      await vi.runAllTimersAsync();
+      vi.runAllTimersAsync();
 
       await expect(pollPromise).rejects.toThrow('Operation failed');
     });
@@ -93,7 +93,7 @@ describe('utils/polling', () => {
       const getError = (result: { message?: string }) => result.message;
 
       const pollPromise = poll({ fn, isComplete, isFailed, getError });
-      await vi.runAllTimersAsync();
+      vi.runAllTimersAsync();
 
       await expect(pollPromise).rejects.toThrow('Custom error');
     });
@@ -171,16 +171,17 @@ describe('utils/polling', () => {
       const fn = vi.fn().mockResolvedValue({ status: 'pending' });
       const isComplete = () => false;
 
-      const pollPromise = poll({ fn, isComplete, interval: 60000 });
+      // Use a large interval to minimize iterations
+      const pollPromise = poll({ fn, isComplete, interval: 150000 });
 
-      // Advance to just before timeout
-      await vi.advanceTimersByTimeAsync(299000);
+      // Advance to just before timeout (300000ms) - only 2 iterations
+      await vi.advanceTimersByTimeAsync(290000);
       expect(fn).toHaveBeenCalled();
 
       // Advance past timeout
-      await vi.advanceTimersByTimeAsync(2000);
-
+      const advancePromise = vi.advanceTimersByTimeAsync(20000);
       await expect(pollPromise).rejects.toThrow('Operation timed out');
+      await advancePromise;
     });
 
     it('returns elapsed time in result', async () => {
