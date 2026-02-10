@@ -27,10 +27,8 @@ export interface WaitResult<T> {
   elapsed: number;
 }
 
-function getWebSocketUrl(): string {
-  const apiUrl = getApiUrl();
-  // Convert API URL to WebSocket URL
-  // https://api.genfeed.ai/v1 -> https://api.genfeed.ai
+async function getWebSocketUrl(): Promise<string> {
+  const apiUrl = await getApiUrl();
   return apiUrl.replace(/\/v\d+$/, '');
 }
 
@@ -40,8 +38,8 @@ export async function waitForCompletion<T>(
   const { taskId, taskType, getResult, spinner, timeout = 600000 } = options;
 
   const startTime = Date.now();
-  const apiKey = getApiKey();
-  const wsUrl = getWebSocketUrl();
+  const apiKey = await getApiKey();
+  const wsUrl = await getWebSocketUrl();
 
   return new Promise((resolve, reject) => {
     let socket: Socket | null = null;
@@ -79,7 +77,6 @@ export async function waitForCompletion<T>(
       }
     };
 
-    // Set up timeout
     timeoutId = setTimeout(() => {
       if (resolved) return;
       resolved = true;
@@ -87,7 +84,6 @@ export async function waitForCompletion<T>(
       reject(new Error('Operation timed out'));
     }, timeout);
 
-    // Connect to WebSocket
     socket = io(wsUrl, {
       auth: {
         token: apiKey,
@@ -105,8 +101,6 @@ export async function waitForCompletion<T>(
     });
 
     socket.on('connect_error', (err) => {
-      // If WebSocket fails, we could fall back to polling
-      // For now, just reject
       if (!resolved) {
         resolved = true;
         cleanup();
@@ -114,25 +108,20 @@ export async function waitForCompletion<T>(
       }
     });
 
-    // Listen for background task updates
     socket.on('background-task-update', (data: BackgroundTaskUpdate) => {
-      // Filter for our specific task
       if (data.resultId !== taskId && data.taskId !== taskId) {
         return;
       }
 
-      // Check if it's the right type
       if (data.resultType && data.resultType !== taskType) {
         return;
       }
 
-      // Update spinner with progress
       if (spinner && data.progress !== undefined) {
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         spinner.text = `Generating... ${data.progress}% (${elapsed}s)`;
       }
 
-      // Handle completion
       if (data.status === 'completed') {
         handleCompletion('completed');
       } else if (data.status === 'failed') {
@@ -140,7 +129,6 @@ export async function waitForCompletion<T>(
       }
     });
 
-    // Also listen for ingredient-status updates (alternative event)
     socket.on(`/ingredients/${taskId}/status`, (data: { status: string; error?: string }) => {
       if (data.status === 'completed' || data.status === 'generated') {
         handleCompletion('completed');
@@ -151,7 +139,6 @@ export async function waitForCompletion<T>(
 
     socket.on('disconnect', (reason) => {
       if (!resolved && reason !== 'io client disconnect') {
-        // Unexpected disconnect - could implement reconnection logic here
         if (spinner) {
           spinner.text = 'Reconnecting...';
         }
@@ -160,9 +147,9 @@ export async function waitForCompletion<T>(
   });
 }
 
-export function createWebSocketConnection(): Socket {
-  const apiKey = getApiKey();
-  const wsUrl = getWebSocketUrl();
+export async function createWebSocketConnection(): Promise<Socket> {
+  const apiKey = await getApiKey();
+  const wsUrl = await getWebSocketUrl();
 
   return io(wsUrl, {
     auth: {

@@ -1,26 +1,204 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { password, select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
 import { validateApiKey } from '../api/auth.js';
 import { listBrands } from '../api/brands.js';
-import { setActiveBrand, setApiKey } from '../config/store.js';
+import { setActiveBrand, setApiKey, setRole } from '../config/store.js';
 import { formatLabel, formatSuccess } from '../ui/theme.js';
 import { GenfeedError, handleError } from '../utils/errors.js';
 
+const AUTH_URL = 'https://app.genfeed.ai/cli-auth';
+const CALLBACK_TIMEOUT = 120_000; // 2 minutes
+
+/**
+ * Start a temporary localhost HTTP server to receive the OAuth callback.
+ * Returns the API key received from the browser redirect.
+ */
+function waitForOAuthCallback(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+      const url = new URL(req.url ?? '/', `http://localhost`);
+
+      if (url.pathname === '/callback') {
+        const key = url.searchParams.get('key');
+        const error = url.searchParams.get('error');
+
+        if (error) {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(callbackPage('Authentication failed', error, false));
+          cleanup();
+          reject(new GenfeedError(error));
+          return;
+        }
+
+        if (key) {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(
+            callbackPage(
+              'Authenticated',
+              'You can close this tab and return to the terminal.',
+              true
+            )
+          );
+          cleanup();
+          resolve(key);
+          return;
+        }
+
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(callbackPage('Error', 'No API key received.', false));
+        return;
+      }
+
+      res.writeHead(404);
+      res.end();
+    });
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(
+        new GenfeedError(
+          'Authentication timed out',
+          'Try again with `gf login` or use `gf login -k <key>` for manual auth'
+        )
+      );
+    }, CALLBACK_TIMEOUT);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      server.close();
+    }
+
+    // Listen on random available port
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (addr && typeof addr === 'object') {
+        const port = addr.port;
+        const authUrl = `${AUTH_URL}?port=${port}`;
+
+        console.log();
+        console.log(chalk.bold('Opening browser to authenticate...'));
+        console.log(chalk.dim(authUrl));
+        console.log();
+
+        // Open browser
+        openBrowser(authUrl);
+      }
+    });
+
+    server.on('error', (err) => {
+      cleanup();
+      reject(new GenfeedError(`Failed to start auth server: ${err.message}`));
+    });
+  });
+}
+
+function openBrowser(url: string): void {
+  const { exec } = require('node:child_process') as typeof import('node:child_process');
+  const platform = process.platform;
+
+  if (platform === 'darwin') {
+    exec(`open "${url}"`);
+  } else if (platform === 'linux') {
+    exec(`xdg-open "${url}"`);
+  } else if (platform === 'win32') {
+    exec(`start "" "${url}"`);
+  }
+}
+
+function callbackPage(title: string, message: string, success: boolean): string {
+  const color = success ? '#7C3AED' : '#ef4444';
+  const icon = success ? '&#10003;' : '&#10007;';
+  return `<!DOCTYPE html>
+<html><head><title>gf - ${title}</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #0a0a0a; color: #fafafa; }
+  .card { text-align: center; padding: 3rem; border-radius: 1rem; border: 1px solid #333; max-width: 400px; }
+  .icon { font-size: 3rem; color: ${color}; margin-bottom: 1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+  p { color: #888; margin: 0; }
+</style></head>
+<body><div class="card">
+  <div class="icon">${icon}</div>
+  <h1>${title}</h1>
+  <p>${message}</p>
+</div></body></html>`;
+}
+
+async function completeLogin(apiKey: string): Promise<void> {
+  await setApiKey(apiKey);
+
+  const spinner = ora('Validating...').start();
+
+  try {
+    const whoamiData = await validateApiKey();
+    spinner.succeed();
+
+    console.log();
+    console.log(formatSuccess(`Logged in as ${chalk.bold(whoamiData.organization.name)}`));
+    console.log(formatLabel('Email', whoamiData.user.email));
+    console.log(formatLabel('Scopes', whoamiData.scopes.join(', ')));
+
+    if (whoamiData.scopes.includes('admin') || whoamiData.scopes.includes('superadmin')) {
+      await setRole('admin');
+      console.log(formatLabel('Role', chalk.green('admin')));
+    }
+
+    console.log();
+    const brands = await listBrands();
+
+    if (brands.length === 0) {
+      console.log(chalk.yellow('No brands found. Create one at https://app.genfeed.ai'));
+    } else if (brands.length === 1) {
+      await setActiveBrand(brands[0].id);
+      console.log(formatSuccess(`Active brand: ${chalk.bold(brands[0].name)}`));
+    } else {
+      const selected = await select({
+        message: 'Select a brand:',
+        choices: brands.map((brand) => ({
+          name: brand.name,
+          value: brand.id,
+          description: brand.description,
+        })),
+      });
+
+      await setActiveBrand(selected);
+      const selectedBrand = brands.find((b) => b.id === selected);
+      console.log();
+      console.log(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
+    }
+  } catch (error) {
+    spinner.fail('Invalid API key');
+    await setApiKey('');
+    throw error;
+  }
+}
+
 export const loginCommand = new Command('login')
-  .description('Authenticate with your Genfeed API key')
-  .option('-k, --key <key>', 'API key (non-interactive)')
+  .description('Authenticate with Genfeed (opens browser)')
+  .option('-k, --key <key>', 'API key (skip browser, non-interactive)')
+  .option('-i, --interactive', 'Paste API key manually instead of browser')
   .action(async (options) => {
     try {
-      let apiKey: string;
-
+      // Direct key — skip everything
       if (options.key) {
-        apiKey = options.key;
-      } else {
+        if (!options.key.startsWith('gf_live_') && !options.key.startsWith('gf_test_')) {
+          throw new GenfeedError(
+            'Invalid API key format',
+            'API keys should start with gf_live_ or gf_test_'
+          );
+        }
+        await completeLogin(options.key);
+        return;
+      }
+
+      // Manual paste mode
+      if (options.interactive) {
         console.log(chalk.dim('Get your API key at: https://app.genfeed.ai/settings/api-keys\n'));
 
-        apiKey = await password({
+        const apiKey = await password({
           message: 'Enter your Genfeed API key:',
           mask: '*',
           validate: (value) => {
@@ -29,59 +207,27 @@ export const loginCommand = new Command('login')
             return true;
           },
         });
+
+        if (!apiKey.startsWith('gf_live_') && !apiKey.startsWith('gf_test_')) {
+          throw new GenfeedError(
+            'Invalid API key format',
+            'API keys should start with gf_live_ or gf_test_'
+          );
+        }
+
+        await completeLogin(apiKey);
+        return;
       }
 
-      // Validate the key format
-      if (!apiKey.startsWith('gf_live_') && !apiKey.startsWith('gf_test_')) {
-        throw new GenfeedError(
-          'Invalid API key format',
-          'API keys should start with gf_live_ or gf_test_'
-        );
-      }
-
-      // Save the key first so API calls work
-      setApiKey(apiKey);
-
-      // Validate with the API
-      const spinner = ora('Validating API key...').start();
+      // Default: OAuth browser flow
+      const spinner = ora('Waiting for authentication...').start();
 
       try {
-        const whoami = await validateApiKey();
-        spinner.succeed();
-
-        console.log();
-        console.log(formatSuccess(`Logged in as ${chalk.bold(whoami.organization.name)}`));
-        console.log(formatLabel('Email', whoami.user.email));
-        console.log(formatLabel('Scopes', whoami.scopes.join(', ')));
-
-        // Fetch brands and prompt for selection
-        console.log();
-        const brands = await listBrands();
-
-        if (brands.length === 0) {
-          console.log(chalk.yellow('No brands found. Create one at https://app.genfeed.ai'));
-        } else if (brands.length === 1) {
-          setActiveBrand(brands[0].id);
-          console.log(formatSuccess(`Active brand: ${chalk.bold(brands[0].name)}`));
-        } else {
-          const selected = await select({
-            message: 'Select a brand:',
-            choices: brands.map((brand) => ({
-              name: brand.name,
-              value: brand.id,
-              description: brand.description,
-            })),
-          });
-
-          setActiveBrand(selected);
-          const selectedBrand = brands.find((b) => b.id === selected);
-          console.log();
-          console.log(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
-        }
+        const apiKey = await waitForOAuthCallback();
+        spinner.succeed('Received API key from browser');
+        await completeLogin(apiKey);
       } catch (error) {
-        spinner.fail('Invalid API key');
-        // Clear the invalid key
-        setApiKey('');
+        spinner.fail('Authentication failed');
         throw error;
       }
     } catch (error) {

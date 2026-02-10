@@ -12,8 +12,15 @@ export class GenfeedError extends Error {
 
 export class AuthError extends GenfeedError {
   constructor(message = 'Not authenticated') {
-    super(message, 'Run `genfeed login` to authenticate');
+    super(message, 'Run `gf login` to authenticate');
     this.name = 'AuthError';
+  }
+}
+
+export class AdminRequiredError extends GenfeedError {
+  constructor() {
+    super('This command requires admin access.', 'Contact your organization admin for access.');
+    this.name = 'AdminRequiredError';
   }
 }
 
@@ -30,8 +37,15 @@ export class ApiError extends GenfeedError {
 
 export class NoBrandError extends GenfeedError {
   constructor() {
-    super('No brand selected', 'Run `genfeed brands select` to choose a brand');
+    super('No brand selected', 'Run `gf brands select` to choose a brand');
     this.name = 'NoBrandError';
+  }
+}
+
+export class DarkroomApiError extends GenfeedError {
+  constructor(message: string, suggestion?: string) {
+    super(message, suggestion ?? 'Check darkroom connectivity with `gf darkroom health`');
+    this.name = 'DarkroomApiError';
   }
 }
 

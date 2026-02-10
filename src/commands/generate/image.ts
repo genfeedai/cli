@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { requireAuth } from '../../api/client.js';
 import { createImage, getImage, type Image } from '../../api/images.js';
-import { getActiveBrand, getDefaultImageModel } from '../../config/store.js';
+import { getActiveBrand, getActiveProfile } from '../../config/store.js';
 import { formatLabel } from '../../ui/theme.js';
 import { handleError, NoBrandError } from '../../utils/errors.js';
 import { waitForCompletion } from '../../utils/websocket.js';
@@ -23,14 +23,15 @@ export const imageCommand = new Command('image')
     try {
       await requireAuth();
 
-      const brandId = options.brand ?? getActiveBrand();
+      const activeBrandId = await getActiveBrand();
+      const brandId = options.brand ?? activeBrandId;
       if (!brandId) {
         throw new NoBrandError();
       }
 
-      const model = options.model ?? getDefaultImageModel();
+      const { profile } = await getActiveProfile();
+      const model = options.model ?? profile.defaults.imageModel;
 
-      // Create the image generation request
       const spinner = ora('Creating image...').start();
 
       const image = await createImage({
@@ -50,26 +51,24 @@ export const imageCommand = new Command('image')
           console.log(formatLabel('ID', image.id));
           console.log(formatLabel('Status', image.status));
           console.log();
-          console.log(chalk.dim(`Check status with: genfeed status ${image.id}`));
+          console.log(chalk.dim(`Check status with: gf status ${image.id}`));
         }
         return;
       }
 
       spinner.text = 'Generating image...';
 
-      // Wait for completion via WebSocket
       const { result, elapsed } = await waitForCompletion<Image>({
         taskId: image.id,
         taskType: 'IMAGE',
         getResult: () => getImage(image.id),
         spinner,
-        timeout: 300000, // 5 minute timeout for images
+        timeout: 300000,
       });
 
       const elapsedSec = (elapsed / 1000).toFixed(1);
       spinner.succeed(`Image generated (${elapsedSec}s)`);
 
-      // Handle output
       if (options.json) {
         console.log(
           JSON.stringify(
@@ -94,7 +93,6 @@ export const imageCommand = new Command('image')
         console.log(formatLabel('Model', result.model));
       }
 
-      // Download if output path specified
       if (options.output && result.url) {
         const downloadSpinner = ora('Downloading image...').start();
         try {
