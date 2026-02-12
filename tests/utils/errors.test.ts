@@ -42,13 +42,13 @@ describe('utils/errors', () => {
       const error = new AuthError();
       expect(error.message).toBe('Not authenticated');
       expect(error.name).toBe('AuthError');
-      expect(error.suggestion).toBe('Run `genfeed login` to authenticate');
+      expect(error.suggestion).toBe('Run `gf login` to authenticate');
     });
 
     it('creates error with custom message', () => {
       const error = new AuthError('Custom auth error');
       expect(error.message).toBe('Custom auth error');
-      expect(error.suggestion).toBe('Run `genfeed login` to authenticate');
+      expect(error.suggestion).toBe('Run `gf login` to authenticate');
     });
 
     it('is instance of GenfeedError', () => {
@@ -90,7 +90,7 @@ describe('utils/errors', () => {
       const error = new NoBrandError();
       expect(error.message).toBe('No brand selected');
       expect(error.name).toBe('NoBrandError');
-      expect(error.suggestion).toBe('Run `genfeed brands select` to choose a brand');
+      expect(error.suggestion).toBe('Run `gf brands select` to choose a brand');
     });
 
     it('is instance of GenfeedError', () => {
@@ -117,7 +117,7 @@ describe('utils/errors', () => {
       const error = new AuthError();
       const formatted = formatError(error);
       expect(formatted).toContain('Not authenticated');
-      expect(formatted).toContain('genfeed login');
+      expect(formatted).toContain('gf login');
     });
 
     it('formats ApiError', () => {

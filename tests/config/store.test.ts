@@ -1,233 +1,206 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Create isolated mock store for each test
-const createMockStore = () => {
-  const data = new Map<string, unknown>();
-  const defaults = {
-    apiUrl: 'https://api.genfeed.ai/v1',
-    defaults: {
-      imageModel: 'imagen-4',
-      videoModel: 'google-veo-3',
-    },
-  };
+const mockFileSystem: { content: string | null } = { content: null };
 
-  return {
-    data,
-    defaults,
-    get store() {
-      const result: Record<string, unknown> = { ...defaults };
-      for (const [key, value] of data.entries()) {
-        result[key] = value;
-      }
-      return result;
-    },
-    get(key: string) {
-      return data.has(key) ? data.get(key) : (defaults as Record<string, unknown>)[key];
-    },
-    set(key: string, value: unknown) {
-      data.set(key, value);
-    },
-    delete(key: string) {
-      data.delete(key);
-    },
-    clear() {
-      data.clear();
-    },
-    path: '/mock/config/path',
-  };
-};
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(async () => {
+    if (mockFileSystem.content === null) {
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    }
+    return mockFileSystem.content;
+  }),
+  writeFile: vi.fn(async (_path: string, data: string) => {
+    mockFileSystem.content = data;
+  }),
+  mkdir: vi.fn(async () => {}),
+}));
 
-let mockStore: ReturnType<typeof createMockStore>;
-
-vi.mock('conf', () => {
-  return {
-    default: class MockConf {
-      get store() {
-        return mockStore.store;
-      }
-      get(key: string) {
-        return mockStore.get(key);
-      }
-      set(key: string, value: unknown) {
-        mockStore.set(key, value);
-      }
-      delete(key: string) {
-        mockStore.delete(key);
-      }
-      clear() {
-        mockStore.clear();
-      }
-      get path() {
-        return mockStore.path;
-      }
+function makeConfigJson(profileOverrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    activeProfile: 'default',
+    profiles: {
+      default: {
+        apiUrl: 'https://api.genfeed.ai/v1',
+        role: 'user',
+        darkroomHost: '100.106.229.81',
+        darkroomApiPort: 8189,
+        defaults: { imageModel: 'imagen-4', videoModel: 'google-veo-3' },
+        ...profileOverrides,
+      },
     },
-  };
-});
+  });
+}
 
 describe('config/store', () => {
   beforeEach(async () => {
-    mockStore = createMockStore();
+    mockFileSystem.content = null;
     vi.resetModules();
+    delete process.env.GENFEED_API_KEY;
+    delete process.env.GENFEED_API_URL;
+    delete process.env.GENFEED_TOKEN;
+    delete process.env.GENFEED_ORGANIZATION_ID;
+    delete process.env.GENFEED_USER_ID;
+    delete process.env.GF_DARKROOM_HOST;
+    delete process.env.GF_DARKROOM_PORT;
   });
 
   describe('getApiKey', () => {
     it('returns undefined when no API key is set', async () => {
       const { getApiKey } = await import('../../src/config/store.js');
-      expect(getApiKey()).toBeUndefined();
+      expect(await getApiKey()).toBeUndefined();
     });
 
     it('returns API key when set', async () => {
-      mockStore.set('apiKey', 'test-api-key');
+      mockFileSystem.content = makeConfigJson({ apiKey: 'test-api-key' });
       const { getApiKey } = await import('../../src/config/store.js');
-      expect(getApiKey()).toBe('test-api-key');
+      expect(await getApiKey()).toBe('test-api-key');
     });
   });
 
   describe('setApiKey', () => {
     it('stores the API key', async () => {
       const { setApiKey, getApiKey } = await import('../../src/config/store.js');
-      setApiKey('new-api-key');
-      expect(getApiKey()).toBe('new-api-key');
+      await setApiKey('new-api-key');
+      expect(await getApiKey()).toBe('new-api-key');
     });
   });
 
   describe('clearApiKey', () => {
     it('removes the API key', async () => {
-      mockStore.set('apiKey', 'test-api-key');
+      mockFileSystem.content = makeConfigJson({ apiKey: 'test-api-key' });
       const { clearApiKey, getApiKey } = await import('../../src/config/store.js');
-      clearApiKey();
-      expect(getApiKey()).toBeUndefined();
+      await clearApiKey();
+      expect(await getApiKey()).toBeUndefined();
     });
   });
 
   describe('getApiUrl', () => {
     it('returns default API URL when not set', async () => {
       const { getApiUrl } = await import('../../src/config/store.js');
-      expect(getApiUrl()).toBe('https://api.genfeed.ai/v1');
+      expect(await getApiUrl()).toBe('https://api.genfeed.ai/v1');
     });
 
     it('returns custom API URL when set', async () => {
-      mockStore.set('apiUrl', 'https://custom.api.com/v1');
+      mockFileSystem.content = makeConfigJson({ apiUrl: 'https://custom.api.com/v1' });
       const { getApiUrl } = await import('../../src/config/store.js');
-      expect(getApiUrl()).toBe('https://custom.api.com/v1');
+      expect(await getApiUrl()).toBe('https://custom.api.com/v1');
     });
   });
 
-  describe('setApiUrl', () => {
+  describe('setProfileField', () => {
     it('stores the API URL', async () => {
-      const { setApiUrl, getApiUrl } = await import('../../src/config/store.js');
-      setApiUrl('https://new.api.com/v1');
-      expect(getApiUrl()).toBe('https://new.api.com/v1');
+      const { setProfileField, getApiUrl } = await import('../../src/config/store.js');
+      await setProfileField('apiUrl', 'https://new.api.com/v1');
+      expect(await getApiUrl()).toBe('https://new.api.com/v1');
     });
   });
 
   describe('getActiveBrand', () => {
     it('returns undefined when no brand is set', async () => {
       const { getActiveBrand } = await import('../../src/config/store.js');
-      expect(getActiveBrand()).toBeUndefined();
+      expect(await getActiveBrand()).toBeUndefined();
     });
 
     it('returns brand ID when set', async () => {
-      mockStore.set('activeBrand', 'brand-123');
+      mockFileSystem.content = makeConfigJson({ activeBrand: 'brand-123' });
       const { getActiveBrand } = await import('../../src/config/store.js');
-      expect(getActiveBrand()).toBe('brand-123');
+      expect(await getActiveBrand()).toBe('brand-123');
     });
   });
 
   describe('setActiveBrand', () => {
     it('stores the active brand', async () => {
       const { setActiveBrand, getActiveBrand } = await import('../../src/config/store.js');
-      setActiveBrand('brand-456');
-      expect(getActiveBrand()).toBe('brand-456');
+      await setActiveBrand('brand-456');
+      expect(await getActiveBrand()).toBe('brand-456');
     });
   });
 
   describe('clearActiveBrand', () => {
     it('removes the active brand', async () => {
-      mockStore.set('activeBrand', 'brand-123');
+      mockFileSystem.content = makeConfigJson({ activeBrand: 'brand-123' });
       const { clearActiveBrand, getActiveBrand } = await import('../../src/config/store.js');
-      clearActiveBrand();
-      expect(getActiveBrand()).toBeUndefined();
+      await clearActiveBrand();
+      expect(await getActiveBrand()).toBeUndefined();
     });
   });
 
-  describe('getDefaultImageModel', () => {
+  describe('getActiveProfile defaults', () => {
     it('returns default image model', async () => {
-      const { getDefaultImageModel } = await import('../../src/config/store.js');
-      expect(getDefaultImageModel()).toBe('imagen-4');
+      const { getActiveProfile } = await import('../../src/config/store.js');
+      const { profile } = await getActiveProfile();
+      expect(profile.defaults.imageModel).toBe('imagen-4');
     });
 
     it('returns custom image model when set', async () => {
-      mockStore.set('defaults', { imageModel: 'custom-model', videoModel: 'google-veo-3' });
-      const { getDefaultImageModel } = await import('../../src/config/store.js');
-      expect(getDefaultImageModel()).toBe('custom-model');
+      mockFileSystem.content = makeConfigJson({
+        defaults: { imageModel: 'custom-model', videoModel: 'google-veo-3' },
+      });
+      const { getActiveProfile } = await import('../../src/config/store.js');
+      const { profile } = await getActiveProfile();
+      expect(profile.defaults.imageModel).toBe('custom-model');
     });
-  });
 
-  describe('getDefaultVideoModel', () => {
     it('returns default video model', async () => {
-      const { getDefaultVideoModel } = await import('../../src/config/store.js');
-      expect(getDefaultVideoModel()).toBe('google-veo-3');
+      const { getActiveProfile } = await import('../../src/config/store.js');
+      const { profile } = await getActiveProfile();
+      expect(profile.defaults.videoModel).toBe('google-veo-3');
     });
 
     it('returns custom video model when set', async () => {
-      mockStore.set('defaults', { imageModel: 'imagen-4', videoModel: 'custom-video' });
-      const { getDefaultVideoModel } = await import('../../src/config/store.js');
-      expect(getDefaultVideoModel()).toBe('custom-video');
+      mockFileSystem.content = makeConfigJson({
+        defaults: { imageModel: 'imagen-4', videoModel: 'custom-video' },
+      });
+      const { getActiveProfile } = await import('../../src/config/store.js');
+      const { profile } = await getActiveProfile();
+      expect(profile.defaults.videoModel).toBe('custom-video');
     });
   });
 
-  describe('setDefaults', () => {
-    it('updates image model default', async () => {
-      const { setDefaults, getDefaultImageModel } = await import('../../src/config/store.js');
-      setDefaults({ imageModel: 'new-image-model' });
-      expect(getDefaultImageModel()).toBe('new-image-model');
-    });
-
-    it('updates video model default', async () => {
-      const { setDefaults, getDefaultVideoModel } = await import('../../src/config/store.js');
-      setDefaults({ videoModel: 'new-video-model' });
-      expect(getDefaultVideoModel()).toBe('new-video-model');
-    });
-
-    it('preserves existing defaults when updating partial', async () => {
-      mockStore.set('defaults', { imageModel: 'imagen-4', videoModel: 'google-veo-3' });
-      const { setDefaults, getDefaultImageModel, getDefaultVideoModel } = await import(
-        '../../src/config/store.js'
-      );
-      setDefaults({ imageModel: 'new-image' });
-      expect(getDefaultImageModel()).toBe('new-image');
-      expect(getDefaultVideoModel()).toBe('google-veo-3');
-    });
-  });
-
-  describe('clearConfig', () => {
-    it('clears all config values', async () => {
-      mockStore.set('apiKey', 'test-key');
-      mockStore.set('activeBrand', 'brand-123');
-      const { clearConfig, getApiKey, getActiveBrand } = await import('../../src/config/store.js');
-      clearConfig();
-      expect(getApiKey()).toBeUndefined();
-      expect(getActiveBrand()).toBeUndefined();
+  describe('clearConfigCache', () => {
+    it('forces reload from file on next access', async () => {
+      const { getApiKey, clearConfigCache } = await import('../../src/config/store.js');
+      // First load uses default (no file)
+      expect(await getApiKey()).toBeUndefined();
+      // Write a config file
+      mockFileSystem.content = makeConfigJson({ apiKey: 'from-file' });
+      clearConfigCache();
+      expect(await getApiKey()).toBe('from-file');
     });
   });
 
   describe('getConfigPath', () => {
     it('returns config file path', async () => {
       const { getConfigPath } = await import('../../src/config/store.js');
-      expect(getConfigPath()).toBe('/mock/config/path');
+      expect(getConfigPath()).toContain('.gf');
+      expect(getConfigPath()).toContain('config.json');
     });
   });
 
-  describe('getConfig', () => {
+  describe('loadConfig', () => {
     it('returns full config object', async () => {
-      mockStore.set('apiKey', 'test-key');
-      mockStore.set('activeBrand', 'brand-123');
-      const { getConfig } = await import('../../src/config/store.js');
-      const config = getConfig();
-      expect(config.apiKey).toBe('test-key');
-      expect(config.activeBrand).toBe('brand-123');
-      expect(config.apiUrl).toBe('https://api.genfeed.ai/v1');
+      mockFileSystem.content = makeConfigJson({ apiKey: 'test-key', activeBrand: 'brand-123' });
+      const { loadConfig } = await import('../../src/config/store.js');
+      const config = await loadConfig();
+      expect(config.activeProfile).toBe('default');
+      expect(config.profiles.default.apiKey).toBe('test-key');
+      expect(config.profiles.default.activeBrand).toBe('brand-123');
+      expect(config.profiles.default.apiUrl).toBe('https://api.genfeed.ai/v1');
+    });
+  });
+
+  describe('runtime overrides', () => {
+    it('env var overrides config API key', async () => {
+      mockFileSystem.content = makeConfigJson({ apiKey: 'from-file' });
+      process.env.GENFEED_API_KEY = 'from-env';
+      const { getApiKey } = await import('../../src/config/store.js');
+      expect(await getApiKey()).toBe('from-env');
+    });
+
+    it('env var overrides config API URL', async () => {
+      process.env.GENFEED_API_URL = 'https://env.api.com/v1';
+      const { getApiUrl } = await import('../../src/config/store.js');
+      expect(await getApiUrl()).toBe('https://env.api.com/v1');
     });
   });
 });
