@@ -43,4 +43,7 @@ jobs:
         run: bun run build
 
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: |
+          unset NODE_AUTH_TOKEN
+          npm config delete //registry.npmjs.org/:_authToken
+          npm publish --access public --provenance
