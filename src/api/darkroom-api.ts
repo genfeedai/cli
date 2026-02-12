@@ -93,6 +93,39 @@ interface DatasetDeleteResponse {
   deleted: boolean;
 }
 
+interface GenerateResponse {
+  job_id: string;
+  status: string;
+  images_total: number;
+}
+
+interface GenerateStatusResponse {
+  job_id: string;
+  job_type: string;
+  status: 'running' | 'completed' | 'failed';
+  stage: string;
+  progress: number;
+  started_at: string;
+  completed_at?: string;
+  persona: string;
+  images_completed: number;
+  images_total: number;
+  filenames: string[];
+  error: string | null;
+}
+
+interface PersonaInfo {
+  handle: string;
+  trigger_word?: string;
+  lora_file?: string;
+  has_pulid?: boolean;
+  error?: string;
+}
+
+interface PersonasResponse {
+  personas: PersonaInfo[];
+}
+
 async function getDarkroomBaseUrl(): Promise<string> {
   const { profile } = await getActiveProfile();
   return `http://${profile.darkroomHost}:${profile.darkroomApiPort}`;
@@ -238,6 +271,58 @@ export async function deleteDataset(persona: string): Promise<DatasetDeleteRespo
   return darkroomRequest<DatasetDeleteResponse>('DELETE', `/datasets/${persona}`);
 }
 
+export async function listPersonas(): Promise<PersonasResponse> {
+  return darkroomRequest<PersonasResponse>('GET', '/personas');
+}
+
+export async function startFaceTest(
+  handle: string,
+  personaConfig?: Record<string, unknown>
+): Promise<GenerateResponse> {
+  return darkroomRequest<GenerateResponse>('POST', '/generate/face-test', {
+    handle,
+    persona_config: personaConfig,
+  });
+}
+
+export async function startBootstrap(
+  handle: string,
+  promptCount?: number,
+  personaConfig?: Record<string, unknown>
+): Promise<GenerateResponse> {
+  return darkroomRequest<GenerateResponse>('POST', '/generate/bootstrap', {
+    handle,
+    prompt_count: promptCount ?? 50,
+    persona_config: personaConfig,
+  });
+}
+
+export async function startPulid(
+  handle: string,
+  mode: string = 'scenes',
+  personaConfig?: Record<string, unknown>
+): Promise<GenerateResponse> {
+  return darkroomRequest<GenerateResponse>('POST', '/generate/pulid', {
+    handle,
+    mode,
+    persona_config: personaConfig,
+  });
+}
+
+export async function startContentGenerate(
+  handle: string,
+  personaConfig?: Record<string, unknown>
+): Promise<GenerateResponse> {
+  return darkroomRequest<GenerateResponse>('POST', '/generate/content', {
+    handle,
+    persona_config: personaConfig,
+  });
+}
+
+export async function getGenerateStatus(jobId: string): Promise<GenerateStatusResponse> {
+  return darkroomRequest<GenerateStatusResponse>('GET', `/generate/${jobId}`);
+}
+
 export type {
   DarkroomHealthResponse,
   DatasetResponse,
@@ -251,4 +336,8 @@ export type {
   ComfyActionResponse,
   DatasetUploadResponse,
   DatasetDeleteResponse,
+  GenerateResponse,
+  GenerateStatusResponse,
+  PersonaInfo,
+  PersonasResponse,
 };
