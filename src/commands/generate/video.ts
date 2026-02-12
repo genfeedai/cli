@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { requireAuth } from '../../api/client.js';
 import { createVideo, getVideo, type Video } from '../../api/videos.js';
-import { getActiveBrand, getDefaultVideoModel } from '../../config/store.js';
+import { getActiveBrand, getActiveProfile } from '../../config/store.js';
 import { formatLabel } from '../../ui/theme.js';
 import { handleError, NoBrandError } from '../../utils/errors.js';
 import { waitForCompletion } from '../../utils/websocket.js';
@@ -23,14 +23,15 @@ export const videoCommand = new Command('video')
     try {
       await requireAuth();
 
-      const brandId = options.brand ?? getActiveBrand();
+      const activeBrandId = await getActiveBrand();
+      const brandId = options.brand ?? activeBrandId;
       if (!brandId) {
         throw new NoBrandError();
       }
 
-      const model = options.model ?? getDefaultVideoModel();
+      const { profile } = await getActiveProfile();
+      const model = options.model ?? profile.defaults.videoModel;
 
-      // Create the video generation request
       const spinner = ora('Creating video...').start();
 
       const video = await createVideo({
@@ -50,26 +51,24 @@ export const videoCommand = new Command('video')
           console.log(formatLabel('ID', video.id));
           console.log(formatLabel('Status', video.status));
           console.log();
-          console.log(chalk.dim(`Check status with: genfeed status ${video.id}`));
+          console.log(chalk.dim(`Check status with: gf status ${video.id}`));
         }
         return;
       }
 
       spinner.text = 'Generating video...';
 
-      // Wait for completion via WebSocket
       const { result, elapsed } = await waitForCompletion<Video>({
         taskId: video.id,
         taskType: 'VIDEO',
         getResult: () => getVideo(video.id),
         spinner,
-        timeout: 600000, // 10 minute timeout for videos
+        timeout: 600000,
       });
 
       const elapsedSec = (elapsed / 1000).toFixed(1);
       spinner.succeed(`Video generated (${elapsedSec}s)`);
 
-      // Handle output
       if (options.json) {
         console.log(
           JSON.stringify(
@@ -97,7 +96,6 @@ export const videoCommand = new Command('video')
         console.log(formatLabel('Model', result.model));
       }
 
-      // Download if output path specified
       if (options.output && result.url) {
         const downloadSpinner = ora('Downloading video...').start();
         try {

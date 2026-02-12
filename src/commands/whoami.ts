@@ -19,8 +19,7 @@ export const whoamiCommand = new Command('whoami')
       const info = await whoami();
       spinner.stop();
 
-      // Get active brand if set
-      const activeBrandId = getActiveBrand();
+      const activeBrandId = await getActiveBrand();
       let activeBrand = null;
       if (activeBrandId) {
         try {
@@ -54,11 +53,9 @@ export const whoamiCommand = new Command('whoami')
       if (activeBrand) {
         console.log(formatLabel('Active Brand', activeBrand.name));
       } else if (activeBrandId) {
-        console.log(
-          formatLabel('Active Brand', chalk.dim('(not found - run genfeed brands select)'))
-        );
+        console.log(formatLabel('Active Brand', chalk.dim('(not found - run gf brands select)')));
       } else {
-        console.log(formatLabel('Active Brand', chalk.dim('(none - run genfeed brands select)')));
+        console.log(formatLabel('Active Brand', chalk.dim('(none - run gf brands select)')));
       }
     } catch (error) {
       handleError(error);

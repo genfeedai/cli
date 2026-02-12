@@ -7,15 +7,15 @@ export const logoutCommand = new Command('logout')
   .description('Remove stored credentials')
   .action(async () => {
     try {
-      const hasKey = getApiKey();
+      const hasKey = await getApiKey();
 
       if (!hasKey) {
         console.log(formatWarning('You are not logged in'));
         return;
       }
 
-      clearApiKey();
-      clearActiveBrand();
+      await clearApiKey();
+      await clearActiveBrand();
 
       console.log(formatSuccess('Logged out successfully'));
     } catch (error) {

@@ -152,6 +152,70 @@ Check video status:
 genfeed status <id> --type video
 ```
 
+### Darkroom (Admin)
+
+Check GPU health:
+
+```bash
+gf darkroom health
+```
+
+Manage ComfyUI service:
+
+```bash
+gf darkroom comfy status
+gf darkroom comfy restart
+```
+
+List available LoRA models:
+
+```bash
+gf darkroom loras
+```
+
+### Training (Admin)
+
+Start LoRA training:
+
+```bash
+gf train <handle> --steps 2000 --wait
+```
+
+Check training status:
+
+```bash
+gf train status <jobId> --watch
+```
+
+### Datasets (Admin)
+
+View dataset info:
+
+```bash
+gf dataset info <handle>
+```
+
+Upload training images:
+
+```bash
+gf dataset upload <handle> ./images/
+```
+
+Download dataset:
+
+```bash
+gf dataset download <handle> ./output/
+```
+
+### Captioning (Admin)
+
+Run Florence-2 auto-captioning on a dataset:
+
+```bash
+gf caption <handle>
+gf caption <handle> --trigger "custom_trigger"
+```
+
 ## Options
 
 ### Global Options
@@ -201,21 +265,100 @@ Check status programmatically:
 STATUS=$(genfeed status abc123 --json | jq -r '.status')
 ```
 
+## Agent Integration
+
+The Genfeed CLI is designed for use by AI agents and automation tools.
+
+### Non-Interactive Authentication
+
+```bash
+genfeed login --key $GENFEED_API_KEY
+```
+
+### JSON Output
+
+All commands support `--json` for machine-readable output:
+
+```bash
+genfeed generate image "A sunset over mountains" --json
+genfeed generate video "Product demo" --json
+genfeed brands --json
+```
+
+### Async Operations
+
+Use `--no-wait` to get an ID immediately without waiting for completion:
+
+```bash
+# Start generation and get ID
+ID=$(genfeed generate image "prompt" --no-wait --json | jq -r '.id')
+
+# Poll for completion
+genfeed status $ID --json
+```
+
+### Agent Usage Example
+
+```bash
+# Authenticate
+genfeed login --key gf_live_xxx
+
+# Generate an image
+RESULT=$(genfeed generate image "Professional headshot, studio lighting" --json)
+IMAGE_ID=$(echo $RESULT | jq -r '.id')
+
+# Check status
+genfeed status $IMAGE_ID --json
+
+# Publish to social media
+genfeed publish $IMAGE_ID --platforms twitter,linkedin --json
+```
+
+### MCP Server
+
+For richer integration, connect directly to the Genfeed MCP server:
+
+```
+Endpoint: https://mcp.genfeed.ai/mcp
+Transport: Streamable HTTP
+Auth: Bearer token (API key)
+```
+
+See the [MCP documentation](https://mcp.genfeed.ai/v1/docs) for details.
+
 ## Configuration
 
-Config is stored in `~/.config/genfeed/config.json`:
+Config is stored in `~/.gf/config.json`:
 
 ```json
 {
-  "apiKey": "gf_live_xxx",
-  "apiUrl": "https://api.genfeed.ai/v1",
-  "activeBrand": "507f1f77bcf86cd799439011",
-  "defaults": {
-    "imageModel": "imagen-4",
-    "videoModel": "google-veo-3"
+  "activeProfile": "default",
+  "profiles": {
+    "default": {
+      "apiUrl": "https://api.genfeed.ai/v1",
+      "role": "user",
+      "darkroomHost": "100.106.229.81",
+      "darkroomApiPort": 8189,
+      "defaults": {
+        "imageModel": "imagen-4",
+        "videoModel": "google-veo-3"
+      }
+    }
   }
 }
 ```
+
+### Environment Variable Overrides
+
+| Variable | Description |
+|----------|-------------|
+| `GENFEED_API_KEY` | API key |
+| `GENFEED_API_URL` | API base URL |
+| `GENFEED_TOKEN` | Auth token |
+| `GENFEED_ORGANIZATION_ID` | Organization ID |
+| `GENFEED_USER_ID` | User ID |
+| `GF_DARKROOM_HOST` | Darkroom GPU host IP |
+| `GF_DARKROOM_PORT` | Darkroom API port |
 
 ## Contributing
 

@@ -19,7 +19,7 @@ export const brandsCommand = new Command('brands')
       const brands = await listBrands();
       spinner.stop();
 
-      const activeBrandId = getActiveBrand();
+      const activeBrandId = await getActiveBrand();
 
       if (options.json) {
         console.log(
@@ -61,7 +61,7 @@ export const brandsCommand = new Command('brands')
       }
 
       console.log();
-      console.log(chalk.dim('Run `genfeed brands select` to change the active brand'));
+      console.log(chalk.dim('Run `gf brands select` to change the active brand'));
     } catch (error) {
       handleError(error);
     }
@@ -82,7 +82,7 @@ brandsCommand
         throw new GenfeedError('No brands found', 'Create a brand at https://app.genfeed.ai');
       }
 
-      const activeBrandId = getActiveBrand();
+      const activeBrandId = await getActiveBrand();
 
       const selected = await select({
         message: 'Select a brand:',
@@ -94,7 +94,7 @@ brandsCommand
         default: activeBrandId,
       });
 
-      setActiveBrand(selected);
+      await setActiveBrand(selected);
       const selectedBrand = brands.find((b) => b.id === selected);
 
       console.log();
@@ -112,7 +112,7 @@ brandsCommand
     try {
       await requireAuth();
 
-      const activeBrandId = getActiveBrand();
+      const activeBrandId = await getActiveBrand();
 
       if (!activeBrandId) {
         if (options.json) {
@@ -120,7 +120,7 @@ brandsCommand
           return;
         }
         console.log(chalk.yellow('No active brand selected'));
-        console.log(chalk.dim('Run `genfeed brands select` to choose a brand'));
+        console.log(chalk.dim('Run `gf brands select` to choose a brand'));
         return;
       }
 

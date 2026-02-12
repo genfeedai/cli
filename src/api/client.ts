@@ -13,14 +13,16 @@ export interface ApiErrorResponse {
   statusCode: number;
 }
 
-function createClient() {
+async function createClient() {
+  const baseURL = await getApiUrl();
+  const apiKey = await getApiKey();
+
   return ofetch.create({
-    baseURL: getApiUrl(),
+    baseURL,
     headers: {
       'Content-Type': 'application/json',
     },
     async onRequest({ options }) {
-      const apiKey = getApiKey();
       if (apiKey) {
         options.headers = new Headers(options.headers as unknown as Record<string, string>);
         options.headers.set('Authorization', `Bearer ${apiKey}`);
@@ -50,17 +52,17 @@ function createClient() {
 }
 
 export async function get<T>(path: string): Promise<T> {
-  const client = createClient();
+  const client = await createClient();
   return client<T>(path, { method: 'GET' });
 }
 
 export async function post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
-  const client = createClient();
+  const client = await createClient();
   return client<T>(path, { method: 'POST', body });
 }
 
 export async function requireAuth(): Promise<string> {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   if (!apiKey) {
     throw new AuthError();
   }
