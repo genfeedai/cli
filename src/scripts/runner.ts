@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface RunScriptOptions {
   script: string;
@@ -16,6 +17,7 @@ interface RunScriptResult {
   stderr: string;
 }
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPTS_DIR = path.resolve(__dirname, '../../../../scripts/darkroom');
 
 export function getScriptPath(name: string): string {

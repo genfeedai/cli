@@ -15,7 +15,12 @@ import {
 import { requireAdmin } from '../middleware/auth-guard.js';
 import { formatLabel } from '../ui/theme.js';
 import { handleError } from '../utils/errors.js';
-import { formatProgress, sleep } from '../utils/helpers.js';
+import {
+  formatProgress,
+  hasExceededTimeout,
+  POLL_TIMEOUT_GENERATION,
+  sleep,
+} from '../utils/helpers.js';
 
 export const darkroomCommand = new Command('darkroom')
   .description('Darkroom infrastructure management [admin]')
@@ -79,7 +84,7 @@ export const darkroomCommand = new Command('darkroom')
             }
 
             const spinner = ora(
-              `${action === 'status' ? 'Checking' : action.charAt(0).toUpperCase() + action.slice(1) + 'ing'} ComfyUI...`
+              `${action === 'status' ? 'Checking' : `${action.charAt(0).toUpperCase()}${action.slice(1)}ing`} ComfyUI...`
             ).start();
             const result = await comfyAction(action as 'start' | 'stop' | 'restart' | 'status');
             spinner.stop();
@@ -382,8 +387,16 @@ function buildGenerateCommand(): Command {
 async function pollGenerateJob(jobId: string, json?: boolean): Promise<void> {
   console.log();
   const pollSpinner = ora('Generating...').start();
+  const pollStart = Date.now();
 
   while (true) {
+    if (hasExceededTimeout(pollStart, POLL_TIMEOUT_GENERATION)) {
+      pollSpinner.fail(
+        'Generation polling timed out (30m). Job may still be running on the server.'
+      );
+      break;
+    }
+
     await sleep(5000);
     const status = await getGenerateStatus(jobId);
 

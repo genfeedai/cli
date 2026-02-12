@@ -95,24 +95,35 @@ function waitForOAuthCallback(): Promise<string> {
   });
 }
 
-function openBrowser(url: string): void {
-  const { exec } = require('node:child_process') as typeof import('node:child_process');
+async function openBrowser(url: string): Promise<void> {
+  const { execFile } = await import('node:child_process');
   const platform = process.platform;
 
   if (platform === 'darwin') {
-    exec(`open "${url}"`);
+    execFile('open', [url]);
   } else if (platform === 'linux') {
-    exec(`xdg-open "${url}"`);
+    execFile('xdg-open', [url]);
   } else if (platform === 'win32') {
-    exec(`start "" "${url}"`);
+    execFile('cmd', ['/c', 'start', '', url]);
   }
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function callbackPage(title: string, message: string, success: boolean): string {
   const color = success ? '#7C3AED' : '#ef4444';
   const icon = success ? '&#10003;' : '&#10007;';
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
   return `<!DOCTYPE html>
-<html><head><title>gf - ${title}</title>
+<html><head><title>gf - ${safeTitle}</title>
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #0a0a0a; color: #fafafa; }
   .card { text-align: center; padding: 3rem; border-radius: 1rem; border: 1px solid #333; max-width: 400px; }
@@ -122,8 +133,8 @@ function callbackPage(title: string, message: string, success: boolean): string 
 </style></head>
 <body><div class="card">
   <div class="icon">${icon}</div>
-  <h1>${title}</h1>
-  <p>${message}</p>
+  <h1>${safeTitle}</h1>
+  <p>${safeMessage}</p>
 </div></body></html>`;
 }
 

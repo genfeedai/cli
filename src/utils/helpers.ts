@@ -47,6 +47,14 @@ export function isTerminalStatus(status: string): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled';
 }
 
+/** Default polling timeout: 2 hours for training, 30 min for generation */
+export const POLL_TIMEOUT_TRAINING = 2 * 60 * 60 * 1000;
+export const POLL_TIMEOUT_GENERATION = 30 * 60 * 1000;
+
+export function hasExceededTimeout(startTime: number, timeoutMs: number): boolean {
+  return Date.now() - startTime > timeoutMs;
+}
+
 export function extractId(doc: { _id?: string; id?: string }): string {
   const candidate = doc._id ?? doc.id;
   if (!candidate) {

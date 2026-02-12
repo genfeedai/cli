@@ -150,7 +150,9 @@ async function darkroomRequest<T>(method: string, path: string, body?: unknown):
     }
 
     const raw = await response.text();
-    if (!raw) return undefined as T;
+    if (!raw) {
+      throw new DarkroomApiError(`Darkroom API ${method} ${path} returned empty response`);
+    }
     return JSON.parse(raw) as T;
   } catch (error) {
     if (error instanceof DarkroomApiError) throw error;

@@ -65,7 +65,16 @@ export function formatError(error: unknown): string {
   return chalk.red('✖ An unknown error occurred');
 }
 
+let replMode = false;
+
+export function setReplMode(enabled: boolean): void {
+  replMode = enabled;
+}
+
 export function handleError(error: unknown): never {
   console.error(formatError(error));
+  if (replMode) {
+    throw error;
+  }
   process.exit(1);
 }

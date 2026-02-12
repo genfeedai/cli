@@ -107,7 +107,14 @@ profileCommand
         process.exit(1);
       }
 
-      const finalValue = mappedField === 'darkroomApiPort' ? Number.parseInt(value) : value;
+      let finalValue: string | number = value;
+      if (mappedField === 'darkroomApiPort') {
+        finalValue = Number.parseInt(value, 10);
+        if (Number.isNaN(finalValue)) {
+          console.error(chalk.red(`Invalid port number: ${value}`));
+          process.exit(1);
+        }
+      }
       await setProfileField(mappedField, finalValue, options.profile);
 
       console.log(formatSuccess(`Set ${field} = ${value}`));

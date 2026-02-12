@@ -5,7 +5,12 @@ import { getDataset, getTrainingStatus, startTraining } from '../api/darkroom-ap
 import { requireAdmin } from '../middleware/auth-guard.js';
 import { formatLabel } from '../ui/theme.js';
 import { handleError } from '../utils/errors.js';
-import { formatProgress, sleep } from '../utils/helpers.js';
+import {
+  formatProgress,
+  hasExceededTimeout,
+  POLL_TIMEOUT_TRAINING,
+  sleep,
+} from '../utils/helpers.js';
 
 export const trainCommand = new Command('train')
   .description('LoRA training management [admin]')
@@ -93,8 +98,16 @@ export const trainCommand = new Command('train')
           // Poll for completion
           console.log();
           const pollSpinner = ora('Training in progress...').start();
+          const pollStart = Date.now();
 
           while (true) {
+            if (hasExceededTimeout(pollStart, POLL_TIMEOUT_TRAINING)) {
+              pollSpinner.fail(
+                'Training polling timed out (2h). Job may still be running on the server.'
+              );
+              break;
+            }
+
             await sleep(5000);
             const status = await getTrainingStatus(result.job_id);
 
@@ -160,8 +173,14 @@ trainCommand
 
         console.log();
         const watchSpinner = ora('Watching training...').start();
+        const watchStart = Date.now();
 
         while (true) {
+          if (hasExceededTimeout(watchStart, POLL_TIMEOUT_TRAINING)) {
+            watchSpinner.fail('Watch timed out (2h). Job may still be running on the server.');
+            break;
+          }
+
           await sleep(5000);
           status = await getTrainingStatus(jobId);
           watchSpinner.text = `${status.stage} ${formatProgress(status.progress)}`;

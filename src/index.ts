@@ -19,6 +19,7 @@ import { trainCommand } from './commands/train.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { workflowCommand } from './commands/workflow.js';
 import { getRole } from './config/store.js';
+import { setReplMode } from './utils/errors.js';
 
 const BANNER = chalk.hex('#7C3AED').bold(`
      ██████  ███████
@@ -102,6 +103,7 @@ async function printHelp(): Promise<void> {
 
 // --- Interactive REPL ---
 async function startRepl(): Promise<void> {
+  setReplMode(true);
   await printBanner();
   await printHelp();
   console.log();

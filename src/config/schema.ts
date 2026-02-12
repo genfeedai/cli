@@ -16,7 +16,7 @@ export const profileSchema = z.object({
       imageModel: z.string().default('imagen-4'),
       videoModel: z.string().default('google-veo-3'),
     })
-    .default({}),
+    .default({ imageModel: 'imagen-4', videoModel: 'google-veo-3' }),
 });
 
 export type Profile = z.infer<typeof profileSchema>;
