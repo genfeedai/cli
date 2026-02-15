@@ -6,9 +6,16 @@ import {
   listProfiles,
   setActiveProfileName,
   setProfileField,
-} from '../config/store.js';
-import { formatLabel, formatSuccess } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+} from '@/config/store.js';
+import {
+  formatError,
+  formatHeader,
+  formatLabel,
+  formatSuccess,
+  print,
+  printJson,
+} from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 export const profileCommand = new Command('profile').description('Manage CLI profiles');
 
@@ -21,11 +28,11 @@ profileCommand
       const profiles = await listProfiles();
 
       if (options.json) {
-        console.log(JSON.stringify(profiles, null, 2));
+        printJson(profiles);
         return;
       }
 
-      console.log(chalk.bold('Profiles\n'));
+      print(formatHeader('Profiles\n'));
 
       for (const { name, active, profile } of profiles) {
         const marker = active ? chalk.green('●') : chalk.dim('○');
@@ -33,14 +40,14 @@ profileCommand
         const activeLabel = active ? chalk.dim(' (active)') : '';
         const apiUrl = chalk.dim(profile.apiUrl);
 
-        console.log(`  ${marker} ${label}${activeLabel} ${apiUrl}`);
+        print(`  ${marker} ${label}${activeLabel} ${apiUrl}`);
         if (profile.darkroomHost !== '100.106.229.81') {
-          console.log(`    ${chalk.dim(`darkroom: ${profile.darkroomHost}`)}`);
+          print(`    ${chalk.dim(`darkroom: ${profile.darkroomHost}`)}`);
         }
       }
 
-      console.log();
-      console.log(chalk.dim(`Config: ${getConfigPath()}`));
+      print();
+      print(chalk.dim(`Config: ${getConfigPath()}`));
     } catch (error) {
       handleError(error);
     }
@@ -53,7 +60,7 @@ profileCommand
   .action(async (name) => {
     try {
       await setActiveProfileName(name);
-      console.log(formatSuccess(`Active profile: ${chalk.bold(name)}`));
+      print(formatSuccess(`Active profile: ${chalk.bold(name)}`));
     } catch (error) {
       handleError(error);
     }
@@ -70,13 +77,13 @@ profileCommand
   .action(async (name, options) => {
     try {
       await createProfile(name, {
-        apiUrl: options.apiUrl,
         apiKey: options.apiKey,
+        apiUrl: options.apiUrl,
         darkroomHost: options.darkroomHost,
         role: options.role as 'user' | 'admin',
       });
-      console.log(formatSuccess(`Profile "${name}" created`));
-      console.log(chalk.dim(`Switch to it with: gf profile use ${name}`));
+      print(formatSuccess(`Profile "${name}" created`));
+      print(chalk.dim(`Switch to it with: gf profile use ${name}`));
     } catch (error) {
       handleError(error);
     }
@@ -90,20 +97,20 @@ profileCommand
   .option('-p, --profile <name>', 'Profile name (defaults to active)')
   .action(async (field, value, options) => {
     try {
-      const fieldMap: Record<string, keyof import('../config/schema.js').Profile> = {
-        'api-url': 'apiUrl',
+      const fieldMap: Record<string, keyof import('@/config/schema.js').Profile> = {
+        'active-brand': 'activeBrand',
+        'active-persona': 'activePersona',
         'api-key': 'apiKey',
+        'api-url': 'apiUrl',
         'darkroom-host': 'darkroomHost',
         'darkroom-port': 'darkroomApiPort',
         role: 'role',
-        'active-persona': 'activePersona',
-        'active-brand': 'activeBrand',
       };
 
       const mappedField = fieldMap[field];
       if (!mappedField) {
-        console.error(chalk.red(`Unknown field: ${field}`));
-        console.log(chalk.dim(`Valid fields: ${Object.keys(fieldMap).join(', ')}`));
+        console.error(formatError(`Unknown field: ${field}`));
+        print(chalk.dim(`Valid fields: ${Object.keys(fieldMap).join(', ')}`));
         process.exit(1);
       }
 
@@ -111,15 +118,15 @@ profileCommand
       if (mappedField === 'darkroomApiPort') {
         finalValue = Number.parseInt(value, 10);
         if (Number.isNaN(finalValue)) {
-          console.error(chalk.red(`Invalid port number: ${value}`));
+          console.error(formatError(`Invalid port number: ${value}`));
           process.exit(1);
         }
       }
       await setProfileField(mappedField, finalValue, options.profile);
 
-      console.log(formatSuccess(`Set ${field} = ${value}`));
+      print(formatSuccess(`Set ${field} = ${value}`));
       if (options.profile) {
-        console.log(formatLabel('Profile', options.profile));
+        print(formatLabel('Profile', options.profile));
       }
     } catch (error) {
       handleError(error);

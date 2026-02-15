@@ -1,5 +1,5 @@
-import { getRole } from '../config/store.js';
-import { AdminRequiredError } from '../utils/errors.js';
+import { getRole } from '@/config/store.js';
+import { AdminRequiredError } from '@/utils/errors.js';
 
 /**
  * Wraps a Commander action handler to require admin role.

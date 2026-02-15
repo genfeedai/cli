@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { requireAuth } from '../api/client.js';
-import { getImage } from '../api/images.js';
-import { getVideo } from '../api/videos.js';
-import { formatError, formatLabel } from '../ui/theme.js';
-import { ApiError, handleError } from '../utils/errors.js';
+import { requireAuth } from '@/api/client.js';
+import { getImage } from '@/api/images.js';
+import { getVideo } from '@/api/videos.js';
+import { formatError, formatLabel, print, printJson } from '@/ui/theme.js';
+import { ApiError, handleError } from '@/utils/errors.js';
 
 type ContentType = 'image' | 'video';
 type Status = 'pending' | 'processing' | 'completed' | 'failed';
@@ -54,32 +54,32 @@ export const statusCommand = new Command('status')
         if (options.type === 'video') {
           const video = await getVideo(id);
           result = {
-            id: video.id,
-            type: 'video',
-            status: video.status,
-            url: video.url,
-            error: video.error,
-            model: video.model,
-            createdAt: video.createdAt,
             completedAt: video.completedAt,
+            createdAt: video.createdAt,
             duration: video.duration,
+            error: video.error,
+            id: video.id,
+            model: video.model,
             resolution: video.resolution,
+            status: video.status,
+            type: 'video',
+            url: video.url,
           };
         } else {
           const image = await getImage(id);
           result = {
-            id: image.id,
-            type: 'image',
-            status: image.status,
-            url: image.url,
-            error: image.error,
-            model: image.model,
-            createdAt: image.createdAt,
             completedAt: image.completedAt,
+            createdAt: image.createdAt,
             dimensions:
               image.width && image.height
-                ? { width: image.width, height: image.height }
+                ? { height: image.height, width: image.width }
                 : undefined,
+            error: image.error,
+            id: image.id,
+            model: image.model,
+            status: image.status,
+            type: 'image',
+            url: image.url,
           };
         }
       } catch (err) {
@@ -88,16 +88,16 @@ export const statusCommand = new Command('status')
           try {
             const video = await getVideo(id);
             result = {
-              id: video.id,
-              type: 'video',
-              status: video.status,
-              url: video.url,
-              error: video.error,
-              model: video.model,
-              createdAt: video.createdAt,
               completedAt: video.completedAt,
+              createdAt: video.createdAt,
               duration: video.duration,
+              error: video.error,
+              id: video.id,
+              model: video.model,
               resolution: video.resolution,
+              status: video.status,
+              type: 'video',
+              url: video.url,
             };
           } catch {
             throw err; // Re-throw original error
@@ -110,46 +110,46 @@ export const statusCommand = new Command('status')
       spinner.stop();
 
       if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
+        printJson(result);
         return;
       }
 
-      console.log(formatLabel('ID', result.id));
-      console.log(formatLabel('Type', result.type));
-      console.log(formatLabel('Status', formatStatus(result.status)));
-      console.log(formatLabel('Model', result.model));
+      print(formatLabel('ID', result.id));
+      print(formatLabel('Type', result.type));
+      print(formatLabel('Status', formatStatus(result.status)));
+      print(formatLabel('Model', result.model));
 
       if (result.status === 'completed' && result.url) {
-        console.log(formatLabel('URL', result.url));
+        print(formatLabel('URL', result.url));
 
         if (result.dimensions) {
-          console.log(
+          print(
             formatLabel('Dimensions', `${result.dimensions.width} × ${result.dimensions.height}`)
           );
         }
 
         if (result.duration) {
-          console.log(formatLabel('Duration', `${result.duration}s`));
+          print(formatLabel('Duration', `${result.duration}s`));
         }
 
         if (result.resolution) {
-          console.log(formatLabel('Resolution', result.resolution));
+          print(formatLabel('Resolution', result.resolution));
         }
 
         if (result.completedAt) {
           const completedDate = new Date(result.completedAt);
-          console.log(formatLabel('Completed', completedDate.toLocaleString()));
+          print(formatLabel('Completed', completedDate.toLocaleString()));
         }
       }
 
       if (result.status === 'failed' && result.error) {
-        console.log();
-        console.log(formatError(`Error: ${result.error}`));
+        print();
+        print(formatError(`Error: ${result.error}`));
       }
 
       if (result.status === 'pending' || result.status === 'processing') {
-        console.log();
-        console.log(chalk.dim('Generation is still in progress. Check again later.'));
+        print();
+        print(chalk.dim('Generation is still in progress. Check again later.'));
       }
     } catch (error) {
       handleError(error);

@@ -66,8 +66,8 @@ describe('api/client', () => {
       const result = await post('/create', { name: 'test' });
 
       expect(mockFetch).toHaveBeenCalledWith('/create', {
-        method: 'POST',
         body: { name: 'test' },
+        method: 'POST',
       });
       expect(result).toEqual({ id: 123 });
     });
@@ -78,8 +78,8 @@ describe('api/client', () => {
       const result = await post('/trigger');
 
       expect(mockFetch).toHaveBeenCalledWith('/trigger', {
-        method: 'POST',
         body: undefined,
+        method: 'POST',
       });
       expect(result).toEqual({ success: true });
     });

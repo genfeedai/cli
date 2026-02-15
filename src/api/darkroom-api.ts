@@ -1,5 +1,5 @@
-import { getActiveProfile } from '../config/store.js';
-import { DarkroomApiError } from '../utils/errors.js';
+import { getActiveProfile } from '@/config/store.js';
+import { DarkroomApiError } from '@/utils/errors.js';
 
 interface DarkroomHealthResponse {
   status: string;
@@ -137,9 +137,9 @@ async function darkroomRequest<T>(method: string, path: string, body?: unknown):
 
   try {
     const response = await fetch(url, {
-      method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      method,
     });
 
     if (!response.ok) {
@@ -212,7 +212,7 @@ export async function uploadDataset(
   }
 
   try {
-    const response = await fetch(url, { method: 'POST', body: formData });
+    const response = await fetch(url, { body: formData, method: 'POST' });
 
     if (!response.ok) {
       const text = await response.text();
@@ -294,8 +294,8 @@ export async function startBootstrap(
 ): Promise<GenerateResponse> {
   return darkroomRequest<GenerateResponse>('POST', '/generate/bootstrap', {
     handle,
-    prompt_count: promptCount ?? 50,
     persona_config: personaConfig,
+    prompt_count: promptCount ?? 50,
   });
 }
 

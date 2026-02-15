@@ -3,9 +3,9 @@ import { type BackgroundTaskUpdate, waitForCompletion } from '../../src/utils/we
 
 // Mock socket.io-client
 const mockSocket = {
-  on: vi.fn(),
-  disconnect: vi.fn(),
   connected: true,
+  disconnect: vi.fn(),
+  on: vi.fn(),
 };
 
 vi.mock('socket.io-client', () => ({
@@ -47,9 +47,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-123',
         taskType: 'VIDEO',
-        getResult,
         timeout: 5000,
       });
 
@@ -59,11 +59,11 @@ describe('utils/websocket', () => {
 
       // Simulate completion event
       const updateEvent: BackgroundTaskUpdate = {
-        taskId: 'task-abc',
+        progress: 100,
         resultId: 'test-123',
         resultType: 'VIDEO',
         status: 'completed',
-        progress: 100,
+        taskId: 'task-abc',
       };
       eventHandlers['background-task-update']?.(updateEvent);
 
@@ -83,9 +83,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-456',
         taskType: 'IMAGE',
-        getResult,
         timeout: 5000,
       });
 
@@ -94,10 +94,10 @@ describe('utils/websocket', () => {
 
       // Simulate failure event
       const updateEvent: BackgroundTaskUpdate = {
-        taskId: 'test-456',
+        error: 'Generation failed: invalid prompt',
         resultType: 'IMAGE',
         status: 'failed',
-        error: 'Generation failed: invalid prompt',
+        taskId: 'test-456',
       };
       eventHandlers['background-task-update']?.(updateEvent);
 
@@ -117,9 +117,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-123',
         taskType: 'VIDEO',
-        getResult,
         timeout: 5000,
       });
 
@@ -128,10 +128,10 @@ describe('utils/websocket', () => {
 
       // Send event for different task - should be ignored
       const wrongTaskEvent: BackgroundTaskUpdate = {
-        taskId: 'other-task',
         resultId: 'other-task',
         resultType: 'VIDEO',
         status: 'completed',
+        taskId: 'other-task',
       };
       eventHandlers['background-task-update']?.(wrongTaskEvent);
 
@@ -140,9 +140,9 @@ describe('utils/websocket', () => {
 
       // Now send correct event
       const correctEvent: BackgroundTaskUpdate = {
-        taskId: 'test-123',
         resultType: 'VIDEO',
         status: 'completed',
+        taskId: 'test-123',
       };
       eventHandlers['background-task-update']?.(correctEvent);
 
@@ -161,9 +161,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-123',
         taskType: 'VIDEO',
-        getResult,
         timeout: 5000,
       });
 
@@ -172,9 +172,9 @@ describe('utils/websocket', () => {
 
       // Send IMAGE event for same ID - should be ignored
       const wrongTypeEvent: BackgroundTaskUpdate = {
-        taskId: 'test-123',
         resultType: 'IMAGE',
         status: 'completed',
+        taskId: 'test-123',
       };
       eventHandlers['background-task-update']?.(wrongTypeEvent);
 
@@ -182,9 +182,9 @@ describe('utils/websocket', () => {
 
       // Now send correct type
       const correctEvent: BackgroundTaskUpdate = {
-        taskId: 'test-123',
         resultType: 'VIDEO',
         status: 'completed',
+        taskId: 'test-123',
       };
       eventHandlers['background-task-update']?.(correctEvent);
 
@@ -202,9 +202,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-timeout',
         taskType: 'VIDEO',
-        getResult,
         timeout: 5000,
       });
 
@@ -228,9 +228,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-conn-error',
         taskType: 'IMAGE',
-        getResult,
         timeout: 5000,
       });
 
@@ -255,10 +255,10 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
-        taskId: 'test-progress',
-        taskType: 'VIDEO',
         getResult,
         spinner: spinner as Parameters<typeof waitForCompletion>[0]['spinner'],
+        taskId: 'test-progress',
+        taskType: 'VIDEO',
         timeout: 10000,
       });
 
@@ -267,10 +267,10 @@ describe('utils/websocket', () => {
 
       // Send progress update
       const progressEvent: BackgroundTaskUpdate = {
-        taskId: 'test-progress',
+        progress: 50,
         resultType: 'VIDEO',
         status: 'processing',
-        progress: 50,
+        taskId: 'test-progress',
       };
       eventHandlers['background-task-update']?.(progressEvent);
 
@@ -278,10 +278,10 @@ describe('utils/websocket', () => {
 
       // Complete
       const completeEvent: BackgroundTaskUpdate = {
-        taskId: 'test-progress',
+        progress: 100,
         resultType: 'VIDEO',
         status: 'completed',
-        progress: 100,
+        taskId: 'test-progress',
       };
       eventHandlers['background-task-update']?.(completeEvent);
 
@@ -299,9 +299,9 @@ describe('utils/websocket', () => {
       });
 
       const promise = waitForCompletion({
+        getResult,
         taskId: 'test-ingredient',
         taskType: 'IMAGE',
-        getResult,
         timeout: 5000,
       });
 

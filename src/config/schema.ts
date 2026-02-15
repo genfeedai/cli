@@ -1,22 +1,22 @@
 import { z } from 'zod';
 
 export const profileSchema = z.object({
-  apiUrl: z.string().url().default('https://api.genfeed.ai/v1'),
-  apiKey: z.string().optional(),
-  token: z.string().optional(),
-  organizationId: z.string().optional(),
-  userId: z.string().optional(),
-  role: z.enum(['user', 'admin']).default('user'),
-  darkroomHost: z.string().default('100.106.229.81'),
-  darkroomApiPort: z.number().default(8189),
   activeBrand: z.string().optional(),
   activePersona: z.string().optional(),
+  apiKey: z.string().optional(),
+  apiUrl: z.string().url().default('https://api.genfeed.ai/v1'),
+  darkroomApiPort: z.number().default(8189),
+  darkroomHost: z.string().default('100.106.229.81'),
   defaults: z
     .object({
       imageModel: z.string().default('imagen-4'),
       videoModel: z.string().default('google-veo-3'),
     })
     .default({ imageModel: 'imagen-4', videoModel: 'google-veo-3' }),
+  organizationId: z.string().optional(),
+  role: z.enum(['user', 'admin']).default('user'),
+  token: z.string().optional(),
+  userId: z.string().optional(),
 });
 
 export type Profile = z.infer<typeof profileSchema>;
@@ -26,13 +26,13 @@ export const configSchema = z.object({
   profiles: z.record(z.string(), profileSchema).default({
     default: {
       apiUrl: 'https://api.genfeed.ai/v1',
-      role: 'user',
-      darkroomHost: '100.106.229.81',
       darkroomApiPort: 8189,
+      darkroomHost: '100.106.229.81',
       defaults: {
         imageModel: 'imagen-4',
         videoModel: 'google-veo-3',
       },
+      role: 'user',
     },
   }),
 });

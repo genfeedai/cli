@@ -3,13 +3,13 @@ import { password, select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { validateApiKey } from '../api/auth.js';
-import { listBrands } from '../api/brands.js';
-import { setActiveBrand, setApiKey, setRole } from '../config/store.js';
-import { formatLabel, formatSuccess } from '../ui/theme.js';
-import { GenfeedError, handleError } from '../utils/errors.js';
+import { validateApiKey } from '@/api/auth.js';
+import { listBrands } from '@/api/brands.js';
+import { setActiveBrand, setApiKey, setRole } from '@/config/store.js';
+import { formatHeader, formatLabel, formatSuccess, formatWarning, print } from '@/ui/theme.js';
+import { GenfeedError, handleError } from '@/utils/errors.js';
 
-const AUTH_URL = 'https://app.genfeed.ai/cli-auth';
+const AUTH_URL = 'https://app.genfeed.ai/oauth/cli';
 const CALLBACK_TIMEOUT = 120_000; // 2 minutes
 
 /**
@@ -78,10 +78,10 @@ function waitForOAuthCallback(): Promise<string> {
         const port = addr.port;
         const authUrl = `${AUTH_URL}?port=${port}`;
 
-        console.log();
-        console.log(chalk.bold('Opening browser to authenticate...'));
-        console.log(chalk.dim(authUrl));
-        console.log();
+        print();
+        print(formatHeader('Opening browser to authenticate...'));
+        print(chalk.dim(authUrl));
+        print();
 
         // Open browser
         openBrowser(authUrl);
@@ -147,38 +147,38 @@ async function completeLogin(apiKey: string): Promise<void> {
     const whoamiData = await validateApiKey();
     spinner.succeed();
 
-    console.log();
-    console.log(formatSuccess(`Logged in as ${chalk.bold(whoamiData.organization.name)}`));
-    console.log(formatLabel('Email', whoamiData.user.email));
-    console.log(formatLabel('Scopes', whoamiData.scopes.join(', ')));
+    print();
+    print(formatSuccess(`Logged in as ${chalk.bold(whoamiData.organization.name)}`));
+    print(formatLabel('Email', whoamiData.user.email));
+    print(formatLabel('Scopes', whoamiData.scopes.join(', ')));
 
     if (whoamiData.scopes.includes('admin') || whoamiData.scopes.includes('superadmin')) {
       await setRole('admin');
-      console.log(formatLabel('Role', chalk.green('admin')));
+      print(formatLabel('Role', chalk.green('admin')));
     }
 
-    console.log();
+    print();
     const brands = await listBrands();
 
     if (brands.length === 0) {
-      console.log(chalk.yellow('No brands found. Create one at https://app.genfeed.ai'));
+      print(formatWarning('No brands found. Create one at https://app.genfeed.ai'));
     } else if (brands.length === 1) {
       await setActiveBrand(brands[0].id);
-      console.log(formatSuccess(`Active brand: ${chalk.bold(brands[0].name)}`));
+      print(formatSuccess(`Active brand: ${chalk.bold(brands[0].name)}`));
     } else {
       const selected = await select({
-        message: 'Select a brand:',
         choices: brands.map((brand) => ({
+          description: brand.description,
           name: brand.name,
           value: brand.id,
-          description: brand.description,
         })),
+        message: 'Select a brand:',
       });
 
       await setActiveBrand(selected);
       const selectedBrand = brands.find((b) => b.id === selected);
-      console.log();
-      console.log(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
+      print();
+      print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
     }
   } catch (error) {
     spinner.fail('Invalid API key');
@@ -207,11 +207,11 @@ export const loginCommand = new Command('login')
 
       // Manual paste mode
       if (options.interactive) {
-        console.log(chalk.dim('Get your API key at: https://app.genfeed.ai/settings/api-keys\n'));
+        print(chalk.dim('Get your API key at: https://app.genfeed.ai/settings/api-keys\n'));
 
         const apiKey = await password({
-          message: 'Enter your Genfeed API key:',
           mask: '*',
+          message: 'Enter your Genfeed API key:',
           validate: (value) => {
             if (!value) return 'API key is required';
             if (!value.startsWith('gf_')) return 'Invalid key format (should start with gf_)';

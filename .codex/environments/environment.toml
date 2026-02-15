@@ -3,9 +3,14 @@ version = 1
 name = "cli"
 
 [setup]
-script = ""
+script = "bun install"
 
 [[actions]]
-name = "Run"
-icon = "tool"
-command = "bun deps:update"
+name = "Lint"
+icon = "check"
+command = "bun run lint"
+
+[[actions]]
+name = "Type Check"
+icon = "shield"
+command = "bunx tsc --noEmit"

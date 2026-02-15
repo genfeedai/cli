@@ -1,6 +1,6 @@
 import { ofetch } from 'ofetch';
-import { getApiKey, getApiUrl } from '../config/store.js';
-import { ApiError, AuthError } from '../utils/errors.js';
+import { getApiKey, getApiUrl } from '@/config/store.js';
+import { ApiError, AuthError } from '@/utils/errors.js';
 
 export interface ApiResponse<T> {
   data: T;
@@ -58,7 +58,7 @@ export async function get<T>(path: string): Promise<T> {
 
 export async function post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
   const client = await createClient();
-  return client<T>(path, { method: 'POST', body });
+  return client<T>(path, { body, method: 'POST' });
 }
 
 export async function requireAuth(): Promise<string> {

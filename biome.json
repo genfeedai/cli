@@ -1,19 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
-  "files": {
-    "includes": ["src/**", "tests/**", "*.json", "*.ts"]
-  },
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": "on",
+        "useSortedKeys": "on"
       }
     }
+  },
+  "files": {
+    "includes": ["src/**", "tests/**", "*.json", "*.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -21,10 +17,16 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "es5"
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
       "complexity": {
         "noUselessFragments": "error"
       },
@@ -32,21 +34,20 @@
         "noUnusedImports": "error",
         "noUnusedVariables": "error"
       },
+      "recommended": true,
       "style": {
         "noNonNullAssertion": "off",
         "useConst": "error"
       },
       "suspicious": {
-        "noExplicitAny": "error",
-        "noConsole": "off"
+        "noConsole": "off",
+        "noExplicitAny": "error"
       }
     }
   },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "always",
-      "trailingCommas": "es5"
-    }
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
   }
 }

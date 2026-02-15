@@ -11,16 +11,24 @@ import {
   startContentGenerate,
   startFaceTest,
   startPulid,
-} from '../api/darkroom-api.js';
-import { requireAdmin } from '../middleware/auth-guard.js';
-import { formatLabel } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+} from '@/api/darkroom-api.js';
+import { requireAdmin } from '@/middleware/auth-guard.js';
+import {
+  formatError,
+  formatHeader,
+  formatLabel,
+  formatSuccess,
+  formatWarning,
+  print,
+  printJson,
+} from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 import {
   formatProgress,
   hasExceededTimeout,
   POLL_TIMEOUT_GENERATION,
   sleep,
-} from '../utils/helpers.js';
+} from '@/utils/helpers.js';
 
 export const darkroomCommand = new Command('darkroom')
   .description('Darkroom infrastructure management [admin]')
@@ -36,7 +44,7 @@ export const darkroomCommand = new Command('darkroom')
             spinner.stop();
 
             if (options.json) {
-              console.log(JSON.stringify(health, null, 2));
+              printJson(health);
               return;
             }
 
@@ -45,21 +53,19 @@ export const darkroomCommand = new Command('darkroom')
             const vramTotalGb = (gpu.memory_total / 1024).toFixed(1);
             const vramPercent = ((gpu.memory_used / gpu.memory_total) * 100).toFixed(0);
 
-            console.log(chalk.bold('Darkroom Status\n'));
-            console.log(formatLabel('GPU', gpu.name));
-            console.log(formatLabel('VRAM', `${vramUsedGb}/${vramTotalGb} GB (${vramPercent}%)`));
-            console.log(formatLabel('Utilization', `${gpu.utilization}%`));
-            console.log(formatLabel('Temperature', `${gpu.temperature}°C`));
+            print(formatHeader('Darkroom Status\n'));
+            print(formatLabel('GPU', gpu.name));
+            print(formatLabel('VRAM', `${vramUsedGb}/${vramTotalGb} GB (${vramPercent}%)`));
+            print(formatLabel('Utilization', `${gpu.utilization}%`));
+            print(formatLabel('Temperature', `${gpu.temperature}°C`));
 
-            console.log();
-            console.log(chalk.bold('Disk\n'));
+            print();
+            print(formatHeader('Disk\n'));
             const root = health.disk.root;
-            console.log(formatLabel('Root', `${root.used}/${root.total} (${root.percent})`));
+            print(formatLabel('Root', `${root.used}/${root.total} (${root.percent})`));
             if (health.disk.comfyui) {
               const comfy = health.disk.comfyui;
-              console.log(
-                formatLabel('ComfyUI', `${comfy.used}/${comfy.total} (${comfy.percent})`)
-              );
+              print(formatLabel('ComfyUI', `${comfy.used}/${comfy.total} (${comfy.percent})`));
             }
           } catch (error) {
             handleError(error);
@@ -78,7 +84,7 @@ export const darkroomCommand = new Command('darkroom')
             const validActions = ['start', 'stop', 'restart', 'status'] as const;
             if (!validActions.includes(action as (typeof validActions)[number])) {
               console.error(
-                chalk.red(`Invalid action: ${action}. Use: ${validActions.join(', ')}`)
+                formatError(`Invalid action: ${action}. Use: ${validActions.join(', ')}`)
               );
               process.exit(1);
             }
@@ -90,21 +96,21 @@ export const darkroomCommand = new Command('darkroom')
             spinner.stop();
 
             if (options.json) {
-              console.log(JSON.stringify(result, null, 2));
+              printJson(result);
               return;
             }
 
             if (result.returncode === 0) {
-              console.log(chalk.green(`ComfyUI ${action}: success`));
+              print(formatSuccess(`ComfyUI ${action}: success`));
             } else {
-              console.log(chalk.red(`ComfyUI ${action}: failed (exit code ${result.returncode})`));
+              print(formatError(`ComfyUI ${action}: failed (exit code ${result.returncode})`));
             }
 
             if (result.stdout) {
-              console.log(chalk.dim(result.stdout));
+              print(chalk.dim(result.stdout));
             }
             if (result.stderr) {
-              console.log(chalk.yellow(result.stderr));
+              print(formatWarning(result.stderr));
             }
           } catch (error) {
             handleError(error);
@@ -124,21 +130,21 @@ export const darkroomCommand = new Command('darkroom')
             spinner.stop();
 
             if (options.json) {
-              console.log(JSON.stringify(result, null, 2));
+              printJson(result);
               return;
             }
 
             if (result.loras.length === 0) {
-              console.log(chalk.yellow('No LoRA models found.'));
+              print(formatWarning('No LoRA models found.'));
               return;
             }
 
-            console.log(chalk.bold(`LoRA Models (${result.loras.length})\n`));
+            print(formatHeader(`LoRA Models (${result.loras.length})\n`));
 
             for (const lora of result.loras) {
               const date = new Date(lora.modified).toLocaleDateString();
-              console.log(`  ${chalk.bold(lora.name)}`);
-              console.log(`    ${chalk.dim(`${lora.size_mb.toFixed(1)} MB | ${date}`)}`);
+              print(`  ${chalk.bold(lora.name)}`);
+              print(`    ${chalk.dim(`${lora.size_mb.toFixed(1)} MB | ${date}`)}`);
             }
           } catch (error) {
             handleError(error);
@@ -158,23 +164,23 @@ export const darkroomCommand = new Command('darkroom')
             spinner.stop();
 
             if (options.json) {
-              console.log(JSON.stringify(result, null, 2));
+              printJson(result);
               return;
             }
 
             if (result.personas.length === 0) {
-              console.log(chalk.yellow('No persona configs found.'));
+              print(formatWarning('No persona configs found.'));
               return;
             }
 
-            console.log(chalk.bold(`Personas (${result.personas.length})\n`));
+            print(formatHeader(`Personas (${result.personas.length})\n`));
             for (const p of result.personas) {
               if (p.error) {
-                console.log(`  ${chalk.red(p.handle)} ${chalk.dim(`(${p.error})`)}`);
+                print(`  ${chalk.red(p.handle)} ${chalk.dim(`(${p.error})`)}`);
               } else {
                 const pulid = p.has_pulid ? chalk.green('pulid') : chalk.dim('no pulid');
-                console.log(`  ${chalk.bold(p.handle)}`);
-                console.log(`    ${chalk.dim(`LoRA: ${p.lora_file} | ${pulid}`)}`);
+                print(`  ${chalk.bold(p.handle)}`);
+                print(`    ${chalk.dim(`LoRA: ${p.lora_file} | ${pulid}`)}`);
               }
             }
           } catch (error) {
@@ -204,16 +210,16 @@ function buildGenerateCommand(): Command {
           spinner.succeed('Face test started');
 
           if (options.json && !options.wait) {
-            console.log(JSON.stringify(result, null, 2));
+            printJson(result);
             return;
           }
 
-          console.log(formatLabel('Job ID', result.job_id));
-          console.log(formatLabel('Images', String(result.images_total)));
+          print(formatLabel('Job ID', result.job_id));
+          print(formatLabel('Images', String(result.images_total)));
 
           if (!options.wait) {
-            console.log();
-            console.log(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
+            print();
+            print(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
             return;
           }
 
@@ -241,18 +247,16 @@ function buildGenerateCommand(): Command {
             spinner.succeed('Bootstrap started');
 
             if (options.json && !options.wait) {
-              console.log(JSON.stringify(result, null, 2));
+              printJson(result);
               return;
             }
 
-            console.log(formatLabel('Job ID', result.job_id));
-            console.log(formatLabel('Images', String(result.images_total)));
+            print(formatLabel('Job ID', result.job_id));
+            print(formatLabel('Images', String(result.images_total)));
 
             if (!options.wait) {
-              console.log();
-              console.log(
-                chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`)
-              );
+              print();
+              print(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
               return;
             }
 
@@ -281,18 +285,16 @@ function buildGenerateCommand(): Command {
             spinner.succeed('PuLID generation started');
 
             if (options.json && !options.wait) {
-              console.log(JSON.stringify(result, null, 2));
+              printJson(result);
               return;
             }
 
-            console.log(formatLabel('Job ID', result.job_id));
-            console.log(formatLabel('Images', String(result.images_total)));
+            print(formatLabel('Job ID', result.job_id));
+            print(formatLabel('Images', String(result.images_total)));
 
             if (!options.wait) {
-              console.log();
-              console.log(
-                chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`)
-              );
+              print();
+              print(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
               return;
             }
 
@@ -318,16 +320,16 @@ function buildGenerateCommand(): Command {
           spinner.succeed('Content generation started');
 
           if (options.json && !options.wait) {
-            console.log(JSON.stringify(result, null, 2));
+            printJson(result);
             return;
           }
 
-          console.log(formatLabel('Job ID', result.job_id));
-          console.log(formatLabel('Images', String(result.images_total)));
+          print(formatLabel('Job ID', result.job_id));
+          print(formatLabel('Images', String(result.images_total)));
 
           if (!options.wait) {
-            console.log();
-            console.log(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
+            print();
+            print(chalk.dim(`Check progress: gf darkroom generate status ${result.job_id}`));
             return;
           }
 
@@ -352,22 +354,22 @@ function buildGenerateCommand(): Command {
           spinner.stop();
 
           if (options.json && !options.watch) {
-            console.log(JSON.stringify(status, null, 2));
+            printJson(status);
             return;
           }
 
-          console.log(formatLabel('Job ID', status.job_id));
-          console.log(formatLabel('Type', status.job_type));
-          console.log(formatLabel('Status', status.status));
-          console.log(formatLabel('Persona', status.persona));
-          console.log(formatLabel('Images', `${status.images_completed}/${status.images_total}`));
-          console.log(formatLabel('Progress', formatProgress(status.progress)));
-          console.log(formatLabel('Started', new Date(status.started_at).toLocaleString()));
+          print(formatLabel('Job ID', status.job_id));
+          print(formatLabel('Type', status.job_type));
+          print(formatLabel('Status', status.status));
+          print(formatLabel('Persona', status.persona));
+          print(formatLabel('Images', `${status.images_completed}/${status.images_total}`));
+          print(formatLabel('Progress', formatProgress(status.progress)));
+          print(formatLabel('Started', new Date(status.started_at).toLocaleString()));
           if (status.completed_at) {
-            console.log(formatLabel('Completed', new Date(status.completed_at).toLocaleString()));
+            print(formatLabel('Completed', new Date(status.completed_at).toLocaleString()));
           }
           if (status.error) {
-            console.log(formatLabel('Error', chalk.red(status.error)));
+            print(formatLabel('Error', chalk.red(status.error)));
           }
 
           if (!options.watch || status.status === 'completed' || status.status === 'failed') {
@@ -385,7 +387,7 @@ function buildGenerateCommand(): Command {
 }
 
 async function pollGenerateJob(jobId: string, json?: boolean): Promise<void> {
-  console.log();
+  print();
   const pollSpinner = ora('Generating...').start();
   const pollStart = Date.now();
 
@@ -407,14 +409,14 @@ async function pollGenerateJob(jobId: string, json?: boolean): Promise<void> {
         `Generation complete: ${status.images_completed}/${status.images_total} images`
       );
       if (json) {
-        console.log(JSON.stringify(status, null, 2));
+        printJson(status);
       } else if (status.filenames.length > 0) {
-        console.log(chalk.dim('\nGenerated files:'));
+        print(chalk.dim('\nGenerated files:'));
         for (const f of status.filenames.slice(0, 20)) {
-          console.log(chalk.dim(`  ${f}`));
+          print(chalk.dim(`  ${f}`));
         }
         if (status.filenames.length > 20) {
-          console.log(chalk.dim(`  ... and ${status.filenames.length - 20} more`));
+          print(chalk.dim(`  ... and ${status.filenames.length - 20} more`));
         }
       }
       break;

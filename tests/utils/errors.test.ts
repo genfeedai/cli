@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   AuthError,
+  BaseCliError,
   formatError,
   GenfeedError,
   handleError,
@@ -11,8 +12,8 @@ import {
 // Mock chalk to return plain strings
 vi.mock('chalk', () => ({
   default: {
-    red: (s: string) => `[RED]${s}[/RED]`,
     dim: (s: string) => `[DIM]${s}[/DIM]`,
+    red: (s: string) => `[RED]${s}[/RED]`,
   },
 }));
 
@@ -79,9 +80,9 @@ describe('utils/errors', () => {
       expect(error.suggestion).toBe('Check your permissions');
     });
 
-    it('is instance of GenfeedError', () => {
+    it('is instance of BaseCliError', () => {
       const error = new ApiError('Test');
-      expect(error).toBeInstanceOf(GenfeedError);
+      expect(error).toBeInstanceOf(BaseCliError);
     });
   });
 

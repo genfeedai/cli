@@ -16,9 +16,9 @@ describe('api/auth', () => {
     it('returns user and organization data', async () => {
       const mockResponse = {
         data: {
-          user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
           organization: { id: 'org-1', name: 'Test Org' },
           scopes: ['read', 'write'],
+          user: { email: 'test@example.com', id: 'user-1', name: 'Test User' },
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -34,9 +34,9 @@ describe('api/auth', () => {
     it('returns scopes array', async () => {
       const mockResponse = {
         data: {
-          user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
           organization: { id: 'org-1', name: 'Test Org' },
           scopes: ['admin', 'read', 'write'],
+          user: { email: 'test@example.com', id: 'user-1', name: 'Test User' },
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -52,9 +52,9 @@ describe('api/auth', () => {
     it('calls whoami to validate the API key', async () => {
       const mockResponse = {
         data: {
-          user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
           organization: { id: 'org-1', name: 'Test Org' },
           scopes: ['read'],
+          user: { email: 'test@example.com', id: 'user-1', name: 'Test User' },
         },
       };
       mockGet.mockResolvedValue(mockResponse);

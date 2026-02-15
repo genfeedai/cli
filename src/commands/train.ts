@@ -1,16 +1,16 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { getDataset, getTrainingStatus, startTraining } from '../api/darkroom-api.js';
-import { requireAdmin } from '../middleware/auth-guard.js';
-import { formatLabel } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+import { getDataset, getTrainingStatus, startTraining } from '@/api/darkroom-api.js';
+import { requireAdmin } from '@/middleware/auth-guard.js';
+import { formatError, formatLabel, print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 import {
   formatProgress,
   hasExceededTimeout,
   POLL_TIMEOUT_TRAINING,
   sleep,
-} from '../utils/helpers.js';
+} from '@/utils/helpers.js';
 
 export const trainCommand = new Command('train')
   .description('LoRA training management [admin]')
@@ -41,12 +41,12 @@ export const trainCommand = new Command('train')
           datasetSpinner.stop();
 
           if (dataset.image_count === 0) {
-            console.log(chalk.red(`No training images found for "${handle}".`));
-            console.log(chalk.dim(`Upload images with: gf dataset upload ${handle} <path>`));
+            print(formatError(`No training images found for "${handle}".`));
+            print(chalk.dim(`Upload images with: gf dataset upload ${handle} <path>`));
             return;
           }
 
-          console.log(
+          print(
             formatLabel(
               'Dataset',
               `${dataset.image_count} images, ${dataset.caption_count} captions`
@@ -68,35 +68,35 @@ export const trainCommand = new Command('train')
           const spinner = ora('Starting training...').start();
 
           const result = await startTraining({
-            persona_slug: handle,
-            trigger_word: triggerWord,
-            lora_name: loraName,
-            steps,
-            lora_rank: options.rank ?? 16,
             learning_rate: options.lr ?? 4e-4,
+            lora_name: loraName,
+            lora_rank: options.rank ?? 16,
+            persona_slug: handle,
+            steps,
+            trigger_word: triggerWord,
           });
 
           spinner.succeed('Training started');
 
           if (options.json) {
-            console.log(JSON.stringify(result, null, 2));
+            printJson(result);
             if (!options.wait) return;
           } else {
-            console.log(formatLabel('Job ID', result.job_id));
-            console.log(formatLabel('Images', String(result.image_count)));
-            console.log(formatLabel('Steps', String(steps)));
-            console.log(formatLabel('Trigger', triggerWord));
-            console.log(formatLabel('LoRA Name', loraName));
+            print(formatLabel('Job ID', result.job_id));
+            print(formatLabel('Images', String(result.image_count)));
+            print(formatLabel('Steps', String(steps)));
+            print(formatLabel('Trigger', triggerWord));
+            print(formatLabel('LoRA Name', loraName));
           }
 
           if (!options.wait) {
-            console.log();
-            console.log(chalk.dim(`Check progress with: gf train status ${result.job_id}`));
+            print();
+            print(chalk.dim(`Check progress with: gf train status ${result.job_id}`));
             return;
           }
 
           // Poll for completion
-          console.log();
+          print();
           const pollSpinner = ora('Training in progress...').start();
           const pollStart = Date.now();
 
@@ -144,24 +144,24 @@ trainCommand
         spinner.stop();
 
         if (options.json && !options.watch) {
-          console.log(JSON.stringify(status, null, 2));
+          printJson(status);
           return;
         }
 
         const printStatus = (s: typeof status) => {
-          console.log(formatLabel('Job ID', s.job_id));
-          console.log(formatLabel('Status', s.status));
-          console.log(formatLabel('Stage', s.stage));
-          console.log(formatLabel('Progress', formatProgress(s.progress)));
-          console.log(formatLabel('Persona', s.persona_slug));
-          console.log(formatLabel('LoRA', s.lora_name));
-          console.log(formatLabel('Images', String(s.image_count)));
-          console.log(formatLabel('Started', new Date(s.started_at).toLocaleString()));
+          print(formatLabel('Job ID', s.job_id));
+          print(formatLabel('Status', s.status));
+          print(formatLabel('Stage', s.stage));
+          print(formatLabel('Progress', formatProgress(s.progress)));
+          print(formatLabel('Persona', s.persona_slug));
+          print(formatLabel('LoRA', s.lora_name));
+          print(formatLabel('Images', String(s.image_count)));
+          print(formatLabel('Started', new Date(s.started_at).toLocaleString()));
           if (s.completed_at) {
-            console.log(formatLabel('Completed', new Date(s.completed_at).toLocaleString()));
+            print(formatLabel('Completed', new Date(s.completed_at).toLocaleString()));
           }
           if (s.error) {
-            console.log(formatLabel('Error', chalk.red(s.error)));
+            print(formatLabel('Error', chalk.red(s.error)));
           }
         };
 
@@ -171,7 +171,7 @@ trainCommand
           return;
         }
 
-        console.log();
+        print();
         const watchSpinner = ora('Watching training...').start();
         const watchStart = Date.now();
 

@@ -1,12 +1,12 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { whoami } from '../api/auth.js';
-import { getBrand } from '../api/brands.js';
-import { requireAuth } from '../api/client.js';
-import { getActiveBrand } from '../config/store.js';
-import { formatLabel, formatSuccess } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+import { whoami } from '@/api/auth.js';
+import { getBrand } from '@/api/brands.js';
+import { requireAuth } from '@/api/client.js';
+import { getActiveBrand } from '@/config/store.js';
+import { formatLabel, formatSuccess, print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 export const whoamiCommand = new Command('whoami')
   .description('Show current user and organization')
@@ -30,32 +30,26 @@ export const whoamiCommand = new Command('whoami')
       }
 
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              user: info.user,
-              organization: info.organization,
-              scopes: info.scopes,
-              activeBrand: activeBrand ? { id: activeBrand.id, name: activeBrand.name } : null,
-            },
-            null,
-            2
-          )
-        );
+        printJson({
+          activeBrand: activeBrand ? { id: activeBrand.id, name: activeBrand.name } : null,
+          organization: info.organization,
+          scopes: info.scopes,
+          user: info.user,
+        });
         return;
       }
 
-      console.log(formatSuccess(`Logged in as ${chalk.bold(info.user.name)}`));
-      console.log();
-      console.log(formatLabel('Email', info.user.email));
-      console.log(formatLabel('Organization', info.organization.name));
-      console.log(formatLabel('Scopes', info.scopes.join(', ')));
+      print(formatSuccess(`Logged in as ${chalk.bold(info.user.name)}`));
+      print();
+      print(formatLabel('Email', info.user.email));
+      print(formatLabel('Organization', info.organization.name));
+      print(formatLabel('Scopes', info.scopes.join(', ')));
       if (activeBrand) {
-        console.log(formatLabel('Active Brand', activeBrand.name));
+        print(formatLabel('Active Brand', activeBrand.name));
       } else if (activeBrandId) {
-        console.log(formatLabel('Active Brand', chalk.dim('(not found - run gf brands select)')));
+        print(formatLabel('Active Brand', chalk.dim('(not found - run gf brands select)')));
       } else {
-        console.log(formatLabel('Active Brand', chalk.dim('(none - run gf brands select)')));
+        print(formatLabel('Active Brand', chalk.dim('(none - run gf brands select)')));
       }
     } catch (error) {
       handleError(error);

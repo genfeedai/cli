@@ -1,14 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': './src',
+    },
+  },
   test: {
-    globals: true,
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
       exclude: [
         'src/index.ts',
         'src/commands/**/*.ts',
@@ -17,18 +16,19 @@ export default defineConfig({
         'src/scripts/**/*.ts',
         'src/utils/helpers.ts',
       ],
+      include: ['src/**/*.ts'],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
       thresholds: {
-        lines: 70,
-        functions: 70,
         branches: 60,
+        functions: 70,
+        lines: 70,
         statements: 70,
       },
     },
+    environment: 'node',
+    globals: true,
+    include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
-  },
-  resolve: {
-    alias: {
-      '@': './src',
-    },
   },
 });

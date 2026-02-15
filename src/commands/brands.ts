@@ -2,11 +2,18 @@ import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { getBrand, listBrands } from '../api/brands.js';
-import { requireAuth } from '../api/client.js';
-import { getActiveBrand, setActiveBrand } from '../config/store.js';
-import { formatLabel, formatSuccess } from '../ui/theme.js';
-import { GenfeedError, handleError } from '../utils/errors.js';
+import { getBrand, listBrands } from '@/api/brands.js';
+import { requireAuth } from '@/api/client.js';
+import { getActiveBrand, setActiveBrand } from '@/config/store.js';
+import {
+  formatHeader,
+  formatLabel,
+  formatSuccess,
+  formatWarning,
+  print,
+  printJson,
+} from '@/ui/theme.js';
+import { GenfeedError, handleError } from '@/utils/errors.js';
 
 export const brandsCommand = new Command('brands')
   .description('Manage brands')
@@ -22,31 +29,25 @@ export const brandsCommand = new Command('brands')
       const activeBrandId = await getActiveBrand();
 
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              brands: brands.map((b) => ({
-                id: b.id,
-                name: b.name,
-                description: b.description,
-                active: b.id === activeBrandId,
-              })),
-              activeBrandId,
-            },
-            null,
-            2
-          )
-        );
+        printJson({
+          activeBrandId,
+          brands: brands.map((b) => ({
+            active: b.id === activeBrandId,
+            description: b.description,
+            id: b.id,
+            name: b.name,
+          })),
+        });
         return;
       }
 
       if (brands.length === 0) {
-        console.log(chalk.yellow('No brands found.'));
-        console.log(chalk.dim('Create one at https://app.genfeed.ai'));
+        print(formatWarning('No brands found.'));
+        print(chalk.dim('Create one at https://app.genfeed.ai'));
         return;
       }
 
-      console.log(chalk.bold('Your brands:\n'));
+      print(formatHeader('Your brands:\n'));
 
       for (const brand of brands) {
         const isActive = brand.id === activeBrandId;
@@ -54,14 +55,14 @@ export const brandsCommand = new Command('brands')
         const name = isActive ? chalk.bold(brand.name) : brand.name;
         const activeLabel = isActive ? chalk.dim(' (active)') : '';
 
-        console.log(`  ${marker} ${name}${activeLabel}`);
+        print(`  ${marker} ${name}${activeLabel}`);
         if (brand.description) {
-          console.log(`    ${chalk.dim(brand.description)}`);
+          print(`    ${chalk.dim(brand.description)}`);
         }
       }
 
-      console.log();
-      console.log(chalk.dim('Run `gf brands select` to change the active brand'));
+      print();
+      print(chalk.dim('Run `gf brands select` to change the active brand'));
     } catch (error) {
       handleError(error);
     }
@@ -85,20 +86,20 @@ brandsCommand
       const activeBrandId = await getActiveBrand();
 
       const selected = await select({
-        message: 'Select a brand:',
         choices: brands.map((brand) => ({
+          description: brand.description,
           name: brand.id === activeBrandId ? `${brand.name} (current)` : brand.name,
           value: brand.id,
-          description: brand.description,
         })),
         default: activeBrandId,
+        message: 'Select a brand:',
       });
 
       await setActiveBrand(selected);
       const selectedBrand = brands.find((b) => b.id === selected);
 
-      console.log();
-      console.log(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
+      print();
+      print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
     } catch (error) {
       handleError(error);
     }
@@ -116,11 +117,11 @@ brandsCommand
 
       if (!activeBrandId) {
         if (options.json) {
-          console.log(JSON.stringify({ activeBrand: null }, null, 2));
+          printJson({ activeBrand: null });
           return;
         }
-        console.log(chalk.yellow('No active brand selected'));
-        console.log(chalk.dim('Run `gf brands select` to choose a brand'));
+        print(formatWarning('No active brand selected'));
+        print(chalk.dim('Run `gf brands select` to choose a brand'));
         return;
       }
 
@@ -129,25 +130,19 @@ brandsCommand
       spinner.stop();
 
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              activeBrand: {
-                id: brand.id,
-                name: brand.name,
-                description: brand.description,
-              },
-            },
-            null,
-            2
-          )
-        );
+        printJson({
+          activeBrand: {
+            description: brand.description,
+            id: brand.id,
+            name: brand.name,
+          },
+        });
         return;
       }
 
-      console.log(formatSuccess(`Active brand: ${chalk.bold(brand.name)}`));
+      print(formatSuccess(`Active brand: ${chalk.bold(brand.name)}`));
       if (brand.description) {
-        console.log(formatLabel('Description', brand.description));
+        print(formatLabel('Description', brand.description));
       }
     } catch (error) {
       handleError(error);

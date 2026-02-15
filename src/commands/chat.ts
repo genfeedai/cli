@@ -2,8 +2,9 @@ import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { post, requireAuth } from '../api/client.js';
-import { handleError } from '../utils/errors.js';
+import { post, requireAuth } from '@/api/client.js';
+import { print } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 interface AgentConversation {
   _id: string;
@@ -45,7 +46,7 @@ export const chatCommand = new Command('chat')
         }
       }
 
-      console.log(chalk.dim('Type your message (Ctrl+C to exit)\n'));
+      print(chalk.dim('Type your message (Ctrl+C to exit)\n'));
 
       // Chat loop
       while (true) {
@@ -69,9 +70,9 @@ export const chatCommand = new Command('chat')
           const messages = response.messages ?? [];
           const lastMessage = messages[messages.length - 1];
           if (lastMessage && lastMessage.role === 'assistant') {
-            console.log(chalk.green('\nAssistant:'), lastMessage.content, '\n');
+            print(`${chalk.green('\nAssistant:')} ${lastMessage.content}\n`);
           } else {
-            console.log(chalk.dim('\nMessage sent.\n'));
+            print(chalk.dim('\nMessage sent.\n'));
           }
         } catch (error) {
           spinner.fail('Failed to send message');

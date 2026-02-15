@@ -2,12 +2,12 @@ import { writeFile } from 'node:fs/promises';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { requireAuth } from '../../api/client.js';
-import { createImage, getImage, type Image } from '../../api/images.js';
-import { getActiveBrand, getActiveProfile } from '../../config/store.js';
-import { formatLabel } from '../../ui/theme.js';
-import { handleError, NoBrandError } from '../../utils/errors.js';
-import { waitForCompletion } from '../../utils/websocket.js';
+import { requireAuth } from '@/api/client.js';
+import { createImage, getImage, type Image } from '@/api/images.js';
+import { getActiveBrand, getActiveProfile } from '@/config/store.js';
+import { formatLabel, print, printJson } from '@/ui/theme.js';
+import { handleError, NoBrandError } from '@/utils/errors.js';
+import { waitForCompletion } from '@/utils/websocket.js';
 
 export const imageCommand = new Command('image')
   .description('Generate an AI image')
@@ -35,23 +35,23 @@ export const imageCommand = new Command('image')
       const spinner = ora('Creating image...').start();
 
       const image = await createImage({
-        text: prompt,
         brand: brandId,
-        model,
-        width: options.width,
         height: options.height,
+        model,
+        text: prompt,
+        width: options.width,
       });
 
       if (!options.wait) {
         spinner.succeed('Image generation started');
 
         if (options.json) {
-          console.log(JSON.stringify({ id: image.id, status: image.status }, null, 2));
+          printJson({ id: image.id, status: image.status });
         } else {
-          console.log(formatLabel('ID', image.id));
-          console.log(formatLabel('Status', image.status));
-          console.log();
-          console.log(chalk.dim(`Check status with: gf status ${image.id}`));
+          print(formatLabel('ID', image.id));
+          print(formatLabel('Status', image.status));
+          print();
+          print(chalk.dim(`Check status with: gf status ${image.id}`));
         }
         return;
       }
@@ -59,10 +59,10 @@ export const imageCommand = new Command('image')
       spinner.text = 'Generating image...';
 
       const { result, elapsed } = await waitForCompletion<Image>({
-        taskId: image.id,
-        taskType: 'IMAGE',
         getResult: () => getImage(image.id),
         spinner,
+        taskId: image.id,
+        taskType: 'IMAGE',
         timeout: 300000,
       });
 
@@ -70,27 +70,21 @@ export const imageCommand = new Command('image')
       spinner.succeed(`Image generated (${elapsedSec}s)`);
 
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              id: result.id,
-              status: result.status,
-              url: result.url,
-              width: result.width,
-              height: result.height,
-              model: result.model,
-              elapsed: elapsed,
-            },
-            null,
-            2
-          )
-        );
+        printJson({
+          elapsed: elapsed,
+          height: result.height,
+          id: result.id,
+          model: result.model,
+          status: result.status,
+          url: result.url,
+          width: result.width,
+        });
       } else {
-        console.log(formatLabel('URL', result.url ?? 'N/A'));
+        print(formatLabel('URL', result.url ?? 'N/A'));
         if (result.width && result.height) {
-          console.log(formatLabel('Dimensions', `${result.width} × ${result.height}`));
+          print(formatLabel('Dimensions', `${result.width} × ${result.height}`));
         }
-        console.log(formatLabel('Model', result.model));
+        print(formatLabel('Model', result.model));
       }
 
       if (options.output && result.url) {

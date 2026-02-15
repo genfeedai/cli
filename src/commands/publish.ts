@@ -1,10 +1,9 @@
 import { checkbox, input } from '@inquirer/prompts';
-import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { post, requireAuth } from '../api/client.js';
-import { formatSuccess } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+import { post, requireAuth } from '@/api/client.js';
+import { formatSuccess, formatWarning, print } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 interface PublishResponse {
   _id: string;
@@ -37,7 +36,7 @@ export const publishCommand = new Command('publish')
       }
 
       if (platforms.length === 0) {
-        console.log(chalk.yellow('No platforms selected.'));
+        print(formatWarning('No platforms selected.'));
         return;
       }
 
@@ -57,7 +56,7 @@ export const publishCommand = new Command('publish')
           platforms,
         });
         spinner.stop();
-        console.log(formatSuccess(`Published to ${platforms.join(', ')}`));
+        print(formatSuccess(`Published to ${platforms.join(', ')}`));
       } catch (error) {
         spinner.fail('Failed to publish');
         throw error;

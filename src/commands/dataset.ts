@@ -1,10 +1,10 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { deleteDataset, downloadDataset, getDataset, uploadDataset } from '../api/darkroom-api.js';
-import { requireAdmin } from '../middleware/auth-guard.js';
-import { formatLabel } from '../ui/theme.js';
-import { handleError } from '../utils/errors.js';
+import { deleteDataset, downloadDataset, getDataset, uploadDataset } from '@/api/darkroom-api.js';
+import { requireAdmin } from '@/middleware/auth-guard.js';
+import { formatError, formatHeader, formatLabel, print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 export const datasetCommand = new Command('dataset').description(
   'Manage training datasets [admin]'
@@ -23,23 +23,23 @@ datasetCommand
         spinner.stop();
 
         if (options.json) {
-          console.log(JSON.stringify(dataset, null, 2));
+          printJson(dataset);
           return;
         }
 
-        console.log(chalk.bold(`Dataset: ${handle}\n`));
-        console.log(formatLabel('Path', dataset.path));
-        console.log(formatLabel('Images', String(dataset.image_count)));
-        console.log(formatLabel('Captions', String(dataset.caption_count)));
+        print(formatHeader(`Dataset: ${handle}\n`));
+        print(formatLabel('Path', dataset.path));
+        print(formatLabel('Images', String(dataset.image_count)));
+        print(formatLabel('Captions', String(dataset.caption_count)));
 
         if (dataset.images.length > 0) {
-          console.log();
-          console.log(chalk.dim('Files:'));
+          print();
+          print(chalk.dim('Files:'));
           for (const img of dataset.images.slice(0, 20)) {
-            console.log(chalk.dim(`  ${img}`));
+            print(chalk.dim(`  ${img}`));
           }
           if (dataset.images.length > 20) {
-            console.log(chalk.dim(`  ... and ${dataset.images.length - 20} more`));
+            print(chalk.dim(`  ... and ${dataset.images.length - 20} more`));
           }
         }
       } catch (error) {
@@ -73,7 +73,7 @@ datasetCommand
           .filter((f) => statSync(f).isFile());
 
         if (filePaths.length === 0) {
-          console.log(chalk.red(`No image or caption files found in ${resolvedPath}`));
+          print(formatError(`No image or caption files found in ${resolvedPath}`));
           return;
         }
 

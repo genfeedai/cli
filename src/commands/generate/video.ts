@@ -2,12 +2,12 @@ import { writeFile } from 'node:fs/promises';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { requireAuth } from '../../api/client.js';
-import { createVideo, getVideo, type Video } from '../../api/videos.js';
-import { getActiveBrand, getActiveProfile } from '../../config/store.js';
-import { formatLabel } from '../../ui/theme.js';
-import { handleError, NoBrandError } from '../../utils/errors.js';
-import { waitForCompletion } from '../../utils/websocket.js';
+import { requireAuth } from '@/api/client.js';
+import { createVideo, getVideo, type Video } from '@/api/videos.js';
+import { getActiveBrand, getActiveProfile } from '@/config/store.js';
+import { formatLabel, print, printJson } from '@/ui/theme.js';
+import { handleError, NoBrandError } from '@/utils/errors.js';
+import { waitForCompletion } from '@/utils/websocket.js';
 
 export const videoCommand = new Command('video')
   .description('Generate an AI video')
@@ -35,23 +35,23 @@ export const videoCommand = new Command('video')
       const spinner = ora('Creating video...').start();
 
       const video = await createVideo({
-        text: prompt,
         brand: brandId,
-        model,
         duration: options.duration,
+        model,
         resolution: options.resolution,
+        text: prompt,
       });
 
       if (!options.wait) {
         spinner.succeed('Video generation started');
 
         if (options.json) {
-          console.log(JSON.stringify({ id: video.id, status: video.status }, null, 2));
+          printJson({ id: video.id, status: video.status });
         } else {
-          console.log(formatLabel('ID', video.id));
-          console.log(formatLabel('Status', video.status));
-          console.log();
-          console.log(chalk.dim(`Check status with: gf status ${video.id}`));
+          print(formatLabel('ID', video.id));
+          print(formatLabel('Status', video.status));
+          print();
+          print(chalk.dim(`Check status with: gf status ${video.id}`));
         }
         return;
       }
@@ -59,10 +59,10 @@ export const videoCommand = new Command('video')
       spinner.text = 'Generating video...';
 
       const { result, elapsed } = await waitForCompletion<Video>({
-        taskId: video.id,
-        taskType: 'VIDEO',
         getResult: () => getVideo(video.id),
         spinner,
+        taskId: video.id,
+        taskType: 'VIDEO',
         timeout: 600000,
       });
 
@@ -70,30 +70,24 @@ export const videoCommand = new Command('video')
       spinner.succeed(`Video generated (${elapsedSec}s)`);
 
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              id: result.id,
-              status: result.status,
-              url: result.url,
-              duration: result.duration,
-              resolution: result.resolution,
-              model: result.model,
-              elapsed: elapsed,
-            },
-            null,
-            2
-          )
-        );
+        printJson({
+          duration: result.duration,
+          elapsed: elapsed,
+          id: result.id,
+          model: result.model,
+          resolution: result.resolution,
+          status: result.status,
+          url: result.url,
+        });
       } else {
-        console.log(formatLabel('URL', result.url ?? 'N/A'));
+        print(formatLabel('URL', result.url ?? 'N/A'));
         if (result.duration) {
-          console.log(formatLabel('Duration', `${result.duration}s`));
+          print(formatLabel('Duration', `${result.duration}s`));
         }
         if (result.resolution) {
-          console.log(formatLabel('Resolution', result.resolution));
+          print(formatLabel('Resolution', result.resolution));
         }
-        console.log(formatLabel('Model', result.model));
+        print(formatLabel('Model', result.model));
       }
 
       if (options.output && result.url) {

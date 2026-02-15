@@ -19,6 +19,7 @@ import { trainCommand } from './commands/train.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { workflowCommand } from './commands/workflow.js';
 import { getRole } from './config/store.js';
+import { formatError, formatHeader, print } from './ui/theme.js';
 import { setReplMode } from './utils/errors.js';
 
 const BANNER = chalk.hex('#7C3AED').bold(`
@@ -60,45 +61,45 @@ program
 program.exitOverride();
 
 async function printBanner(): Promise<void> {
-  console.log(BANNER);
-  console.log(chalk.dim('  Unified CLI for Genfeed.ai'));
+  print(BANNER);
+  print(chalk.dim('  Unified CLI for Genfeed.ai'));
 
   const role = await getRole();
   if (role === 'admin') {
-    console.log(chalk.dim('  Mode: ') + chalk.green('admin'));
+    print(chalk.dim('  Mode: ') + chalk.green('admin'));
   }
-  console.log();
+  print();
 }
 
 async function printHelp(): Promise<void> {
   const role = await getRole();
 
-  console.log(chalk.bold('User Commands:\n'));
-  console.log('  login          Authenticate with your Genfeed API key');
-  console.log('  logout         Remove stored credentials');
-  console.log('  whoami         Show current user and organization');
-  console.log('  brands         Manage brands');
-  console.log('  generate       Generate AI content (image, video)');
-  console.log('  status         Check the status of a generation job');
-  console.log('  chat           Start an interactive agent chat session');
-  console.log('  workflow       Manage and execute workflows');
-  console.log('  publish        Publish content to social media');
-  console.log('  library        Browse content library');
-  console.log('  profile        Manage CLI profiles');
+  print(formatHeader('User Commands:\n'));
+  print('  login          Authenticate with your Genfeed API key');
+  print('  logout         Remove stored credentials');
+  print('  whoami         Show current user and organization');
+  print('  brands         Manage brands');
+  print('  generate       Generate AI content (image, video)');
+  print('  status         Check the status of a generation job');
+  print('  chat           Start an interactive agent chat session');
+  print('  workflow       Manage and execute workflows');
+  print('  publish        Publish content to social media');
+  print('  library        Browse content library');
+  print('  profile        Manage CLI profiles');
 
   if (role === 'admin') {
-    console.log();
-    console.log(chalk.bold('Admin Commands:\n'));
-    console.log('  darkroom       Darkroom infrastructure (health, comfy, loras)');
-    console.log('  train          LoRA training (start, status)');
-    console.log('  personas       List and manage personas');
-    console.log('  caption        Run Florence-2 auto-captioning');
-    console.log('  dataset        Manage training datasets');
+    print();
+    print(formatHeader('Admin Commands:\n'));
+    print('  darkroom       Darkroom infrastructure (health, comfy, loras)');
+    print('  train          LoRA training (start, status)');
+    print('  personas       List and manage personas');
+    print('  caption        Run Florence-2 auto-captioning');
+    print('  dataset        Manage training datasets');
   }
 
-  console.log();
-  console.log(chalk.dim('  Run `gf <command> --help` for command details'));
-  console.log(chalk.dim('  Run `gf` with no args for interactive mode'));
+  print();
+  print(chalk.dim('  Run `gf <command> --help` for command details'));
+  print(chalk.dim('  Run `gf` with no args for interactive mode'));
 }
 
 // --- Interactive REPL ---
@@ -106,7 +107,7 @@ async function startRepl(): Promise<void> {
   setReplMode(true);
   await printBanner();
   await printHelp();
-  console.log();
+  print();
 
   const rl = createInterface({
     input: process.stdin,
@@ -129,7 +130,7 @@ async function startRepl(): Promise<void> {
 
     // Exit commands
     if (trimmed === 'exit' || trimmed === 'quit' || trimmed === 'q') {
-      console.log(chalk.dim('Goodbye!'));
+      print(chalk.dim('Goodbye!'));
       break;
     }
 
@@ -155,15 +156,15 @@ async function startRepl(): Promise<void> {
           continue;
         }
         if (error.message.includes('unknown command') || code === 'commander.unknownCommand') {
-          console.log(chalk.red(`Unknown command: ${args[0]}`));
-          console.log(chalk.dim('Type `help` to see available commands'));
+          print(formatError(`Unknown command: ${args[0]}`));
+          print(chalk.dim('Type `help` to see available commands'));
         } else {
-          console.error(chalk.red(`Error: ${error.message}`));
+          console.error(formatError(error.message));
         }
       }
     }
 
-    console.log(); // Spacing between commands
+    print(); // Spacing between commands
   }
 
   rl.close();
@@ -212,7 +213,7 @@ function parseReplInput(input: string): string[] {
 if (process.argv.length <= 2) {
   // No command provided — launch interactive REPL
   startRepl().catch((error) => {
-    console.error(chalk.red(`Fatal: ${error instanceof Error ? error.message : String(error)}`));
+    console.error(formatError(`Fatal: ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   });
 } else {
@@ -225,7 +226,7 @@ if (process.argv.length <= 2) {
         process.exit(0);
       }
     }
-    console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+    console.error(formatError(error instanceof Error ? error.message : String(error)));
     process.exit(1);
   });
 }

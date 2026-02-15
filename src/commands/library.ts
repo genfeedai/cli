@@ -1,8 +1,9 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { get, requireAuth } from '../api/client.js';
-import { handleError } from '../utils/errors.js';
+import { get, requireAuth } from '@/api/client.js';
+import { formatHeader, print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 interface Ingredient {
   _id: string;
@@ -38,16 +39,16 @@ export const libraryCommand = new Command('library')
 
         const items = response.data ?? [];
         if (items.length === 0) {
-          console.log(chalk.dim('No items found.'));
+          print(chalk.dim('No items found.'));
           return;
         }
 
         if (options.json) {
-          console.log(JSON.stringify(items, null, 2));
+          printJson(items);
           return;
         }
 
-        console.log(chalk.bold(`\nLibrary (${items.length} items):\n`));
+        print(formatHeader(`\nLibrary (${items.length} items):\n`));
 
         for (const item of items) {
           const category = chalk.blue(`[${item.category}]`);
@@ -55,11 +56,11 @@ export const libraryCommand = new Command('library')
             item.status === 'generated' ? chalk.green(item.status) : chalk.dim(item.status);
           const id = chalk.dim(`(${item._id})`);
 
-          console.log(`  ${category} ${status} ${id}`);
+          print(`  ${category} ${status} ${id}`);
           if (item.prompt?.text) {
-            console.log(`  ${chalk.dim(item.prompt.text.slice(0, 80))}...`);
+            print(`  ${chalk.dim(item.prompt.text.slice(0, 80))}...`);
           }
-          console.log();
+          print();
         }
       } catch (error) {
         spinner.fail('Failed to fetch library');

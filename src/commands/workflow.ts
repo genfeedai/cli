@@ -1,8 +1,9 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { get, post, requireAuth } from '../api/client.js';
-import { handleError } from '../utils/errors.js';
+import { get, post, requireAuth } from '@/api/client.js';
+import { formatHeader, print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 interface Workflow {
   _id: string;
@@ -37,22 +38,22 @@ export const workflowCommand = new Command('workflow')
 
             const workflows = response.data ?? [];
             if (workflows.length === 0) {
-              console.log(chalk.dim('No workflows found.'));
+              print(chalk.dim('No workflows found.'));
               return;
             }
 
             if (options.json) {
-              console.log(JSON.stringify(workflows, null, 2));
+              printJson(workflows);
               return;
             }
 
-            console.log(chalk.bold('\nWorkflows:\n'));
+            print(formatHeader('\nWorkflows:\n'));
             for (const wf of workflows) {
-              console.log(`  ${chalk.cyan(wf.label ?? wf.name)} ${chalk.dim(`(${wf._id})`)}`);
+              print(`  ${chalk.cyan(wf.label ?? wf.name)} ${chalk.dim(`(${wf._id})`)}`);
               if (wf.description) {
-                console.log(`  ${chalk.dim(wf.description)}`);
+                print(`  ${chalk.dim(wf.description)}`);
               }
-              console.log();
+              print();
             }
           } catch (error) {
             spinner.fail('Failed to fetch workflows');
@@ -77,7 +78,7 @@ export const workflowCommand = new Command('workflow')
               workflowId: id,
             });
             spinner.succeed('Workflow execution started');
-            console.log(chalk.dim(`Execution ID: ${response._id ?? response.id}`));
+            print(chalk.dim(`Execution ID: ${response._id ?? response.id}`));
           } catch (error) {
             spinner.fail('Failed to execute workflow');
             throw error;

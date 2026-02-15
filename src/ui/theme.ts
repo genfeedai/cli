@@ -1,22 +1,22 @@
 import chalk from 'chalk';
 
 export const colors = {
+  bold: chalk.bold,
+  dim: chalk.dim,
+  error: chalk.red,
+  info: chalk.blue,
   primary: chalk.hex('#7C3AED'),
   success: chalk.green,
-  error: chalk.red,
   warning: chalk.yellow,
-  info: chalk.blue,
-  dim: chalk.dim,
-  bold: chalk.bold,
 };
 
 export const symbols = {
-  success: chalk.green('✓'),
-  error: chalk.red('✖'),
-  warning: chalk.yellow('⚠'),
-  info: chalk.blue('ℹ'),
   arrow: chalk.dim('→'),
   bullet: chalk.dim('•'),
+  error: chalk.red('✖'),
+  info: chalk.blue('ℹ'),
+  success: chalk.green('✓'),
+  warning: chalk.yellow('⚠'),
 };
 
 export function formatSuccess(message: string): string {
@@ -41,4 +41,14 @@ export function formatLabel(label: string, value: string): string {
 
 export function formatHeader(text: string): string {
   return colors.bold(text);
+}
+
+/** Standard CLI output — replaces console.log */
+export function print(message = ''): void {
+  process.stdout.write(`${message}\n`);
+}
+
+/** JSON output for --json flag */
+export function printJson(data: unknown): void {
+  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
 }

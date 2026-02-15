@@ -80,12 +80,12 @@ export function mergeProfileWithRuntime(profile: Profile, runtime: Partial<Profi
     ...profile,
     apiKey: runtime.apiKey ?? profile.apiKey,
     apiUrl: runtime.apiUrl ?? profile.apiUrl,
-    token: runtime.token ?? profile.token,
-    organizationId: runtime.organizationId ?? profile.organizationId,
-    userId: runtime.userId ?? profile.userId,
-    darkroomHost: runtime.darkroomHost ?? profile.darkroomHost,
     darkroomApiPort: runtime.darkroomApiPort ?? profile.darkroomApiPort,
+    darkroomHost: runtime.darkroomHost ?? profile.darkroomHost,
+    organizationId: runtime.organizationId ?? profile.organizationId,
     role: runtime.role ?? profile.role,
+    token: runtime.token ?? profile.token,
+    userId: runtime.userId ?? profile.userId,
   };
 }
 
@@ -201,8 +201,8 @@ export async function listProfiles(): Promise<
 > {
   const config = await loadConfig();
   return Object.entries(config.profiles).map(([name, profile]) => ({
-    name,
     active: name === config.activeProfile,
+    name,
     profile,
   }));
 }

@@ -18,25 +18,25 @@ describe('api/images', () => {
     it('creates an image with required fields', async () => {
       const mockResponse = {
         data: {
-          id: 'img-1',
-          status: 'pending',
-          prompt: 'A sunset over mountains',
-          model: 'flux',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'img-1',
+          model: 'flux',
+          prompt: 'A sunset over mountains',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createImage({
-        text: 'A sunset over mountains',
         brand: 'brand-1',
+        text: 'A sunset over mountains',
       });
 
       expect(mockPost).toHaveBeenCalledWith('/images', {
-        text: 'A sunset over mountains',
         brand: 'brand-1',
+        text: 'A sunset over mountains',
       });
       expect(result.id).toBe('img-1');
       expect(result.status).toBe('pending');
@@ -45,31 +45,31 @@ describe('api/images', () => {
     it('creates an image with optional dimensions', async () => {
       const mockResponse = {
         data: {
-          id: 'img-2',
-          status: 'pending',
-          prompt: 'A cat',
-          model: 'flux',
-          width: 1024,
-          height: 768,
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          height: 768,
+          id: 'img-2',
+          model: 'flux',
+          prompt: 'A cat',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
+          width: 1024,
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createImage({
-        text: 'A cat',
         brand: 'brand-1',
-        width: 1024,
         height: 768,
+        text: 'A cat',
+        width: 1024,
       });
 
       expect(mockPost).toHaveBeenCalledWith('/images', {
-        text: 'A cat',
         brand: 'brand-1',
-        width: 1024,
         height: 768,
+        text: 'A cat',
+        width: 1024,
       });
       expect(result.width).toBe(1024);
       expect(result.height).toBe(768);
@@ -78,21 +78,21 @@ describe('api/images', () => {
     it('creates an image with custom model', async () => {
       const mockResponse = {
         data: {
-          id: 'img-3',
-          status: 'pending',
-          prompt: 'A dog',
-          model: 'dall-e-3',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'img-3',
+          model: 'dall-e-3',
+          prompt: 'A dog',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createImage({
-        text: 'A dog',
         brand: 'brand-1',
         model: 'dall-e-3',
+        text: 'A dog',
       });
 
       expect(result.model).toBe('dall-e-3');
@@ -103,12 +103,12 @@ describe('api/images', () => {
     it('returns image by id with pending status', async () => {
       const mockResponse = {
         data: {
-          id: 'img-1',
-          status: 'pending',
-          prompt: 'A sunset',
-          model: 'flux',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'img-1',
+          model: 'flux',
+          prompt: 'A sunset',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
@@ -124,15 +124,15 @@ describe('api/images', () => {
     it('returns completed image with url', async () => {
       const mockResponse = {
         data: {
-          id: 'img-1',
-          status: 'completed',
-          prompt: 'A sunset',
-          model: 'flux',
-          url: 'https://cdn.genfeed.ai/images/img-1.png',
           brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
           completedAt: '2024-01-01T00:01:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+          id: 'img-1',
+          model: 'flux',
+          prompt: 'A sunset',
+          status: 'completed',
+          updatedAt: '2024-01-01T00:00:00Z',
+          url: 'https://cdn.genfeed.ai/images/img-1.png',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -147,13 +147,13 @@ describe('api/images', () => {
     it('returns failed image with error', async () => {
       const mockResponse = {
         data: {
-          id: 'img-1',
-          status: 'failed',
-          prompt: 'Invalid prompt',
-          model: 'flux',
-          error: 'Content policy violation',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          error: 'Content policy violation',
+          id: 'img-1',
+          model: 'flux',
+          prompt: 'Invalid prompt',
+          status: 'failed',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };

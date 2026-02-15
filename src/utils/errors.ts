@@ -1,11 +1,11 @@
-import chalk from 'chalk';
+import { BaseCliError, handleError as baseHandleError } from '@genfeedai/errors';
 
-export class GenfeedError extends Error {
-  constructor(
-    message: string,
-    public suggestion?: string
-  ) {
-    super(message);
+export type { HandleErrorOptions } from '@genfeedai/errors';
+export { ApiError, BaseCliError, formatError } from '@genfeedai/errors';
+
+export class GenfeedError extends BaseCliError {
+  constructor(message: string, suggestion?: string) {
+    super(message, suggestion);
     this.name = 'GenfeedError';
   }
 }
@@ -24,17 +24,6 @@ export class AdminRequiredError extends GenfeedError {
   }
 }
 
-export class ApiError extends GenfeedError {
-  constructor(
-    message: string,
-    public statusCode?: number,
-    suggestion?: string
-  ) {
-    super(message, suggestion);
-    this.name = 'ApiError';
-  }
-}
-
 export class NoBrandError extends GenfeedError {
   constructor() {
     super('No brand selected', 'Run `gf brands select` to choose a brand');
@@ -49,22 +38,6 @@ export class DarkroomApiError extends GenfeedError {
   }
 }
 
-export function formatError(error: unknown): string {
-  if (error instanceof GenfeedError) {
-    let output = chalk.red(`✖ ${error.message}`);
-    if (error.suggestion) {
-      output += `\n  ${chalk.dim(error.suggestion)}`;
-    }
-    return output;
-  }
-
-  if (error instanceof Error) {
-    return chalk.red(`✖ ${error.message}`);
-  }
-
-  return chalk.red('✖ An unknown error occurred');
-}
-
 let replMode = false;
 
 export function setReplMode(enabled: boolean): void {
@@ -72,9 +45,5 @@ export function setReplMode(enabled: boolean): void {
 }
 
 export function handleError(error: unknown): never {
-  console.error(formatError(error));
-  if (replMode) {
-    throw error;
-  }
-  process.exit(1);
+  baseHandleError(error, { replMode });
 }

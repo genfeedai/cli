@@ -58,8 +58,8 @@ export function runScript(options: RunScriptOptions): Promise<RunScriptResult> {
     child.on('close', (code) => {
       resolve({
         exitCode: code ?? 1,
-        stdout: stdout.trim(),
         stderr: stderr.trim(),
+        stdout: stdout.trim(),
       });
     });
   });

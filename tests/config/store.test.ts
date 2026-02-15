@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockFileSystem: { content: string | null } = { content: null };
 
 vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(async () => {}),
   readFile: vi.fn(async () => {
     if (mockFileSystem.content === null) {
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
@@ -12,7 +13,6 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(async (_path: string, data: string) => {
     mockFileSystem.content = data;
   }),
-  mkdir: vi.fn(async () => {}),
 }));
 
 function makeConfigJson(profileOverrides: Record<string, unknown> = {}) {
@@ -21,10 +21,10 @@ function makeConfigJson(profileOverrides: Record<string, unknown> = {}) {
     profiles: {
       default: {
         apiUrl: 'https://api.genfeed.ai/v1',
-        role: 'user',
-        darkroomHost: '100.106.229.81',
         darkroomApiPort: 8189,
+        darkroomHost: '100.106.229.81',
         defaults: { imageModel: 'imagen-4', videoModel: 'google-veo-3' },
+        role: 'user',
         ...profileOverrides,
       },
     },
@@ -179,7 +179,7 @@ describe('config/store', () => {
 
   describe('loadConfig', () => {
     it('returns full config object', async () => {
-      mockFileSystem.content = makeConfigJson({ apiKey: 'test-key', activeBrand: 'brand-123' });
+      mockFileSystem.content = makeConfigJson({ activeBrand: 'brand-123', apiKey: 'test-key' });
       const { loadConfig } = await import('../../src/config/store.js');
       const config = await loadConfig();
       expect(config.activeProfile).toBe('default');

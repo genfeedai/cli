@@ -1,9 +1,10 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { runCaption } from '../api/darkroom-api.js';
-import { requireAdmin } from '../middleware/auth-guard.js';
-import { handleError } from '../utils/errors.js';
+import { runCaption } from '@/api/darkroom-api.js';
+import { requireAdmin } from '@/middleware/auth-guard.js';
+import { print, printJson } from '@/ui/theme.js';
+import { handleError } from '@/utils/errors.js';
 
 export const captionCommand = new Command('caption')
   .description('Run Florence-2 auto-captioning on training dataset [admin]')
@@ -23,12 +24,12 @@ export const captionCommand = new Command('caption')
         spinner.succeed('Captioning complete');
 
         if (options.json) {
-          console.log(JSON.stringify(result, null, 2));
+          printJson(result);
           return;
         }
 
         if (result.output) {
-          console.log(chalk.dim(result.output));
+          print(chalk.dim(result.output));
         }
       } catch (error) {
         handleError(error);

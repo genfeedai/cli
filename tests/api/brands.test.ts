@@ -17,16 +17,16 @@ describe('api/brands', () => {
       const mockResponse = {
         data: [
           {
+            createdAt: '2024-01-01T00:00:00Z',
+            description: 'First brand',
             id: 'brand-1',
             name: 'Brand One',
-            description: 'First brand',
-            createdAt: '2024-01-01T00:00:00Z',
             updatedAt: '2024-01-01T00:00:00Z',
           },
           {
+            createdAt: '2024-01-02T00:00:00Z',
             id: 'brand-2',
             name: 'Brand Two',
-            createdAt: '2024-01-02T00:00:00Z',
             updatedAt: '2024-01-02T00:00:00Z',
           },
         ],
@@ -53,10 +53,10 @@ describe('api/brands', () => {
       const mockResponse = {
         data: [
           {
-            id: 'brand-1',
-            name: 'Brand One',
-            logoUrl: 'https://example.com/logo.png',
             createdAt: '2024-01-01T00:00:00Z',
+            id: 'brand-1',
+            logoUrl: 'https://example.com/logo.png',
+            name: 'Brand One',
             updatedAt: '2024-01-01T00:00:00Z',
           },
         ],
@@ -73,10 +73,10 @@ describe('api/brands', () => {
     it('returns a single brand by id', async () => {
       const mockResponse = {
         data: {
+          createdAt: '2024-01-01T00:00:00Z',
+          description: 'Test description',
           id: 'brand-1',
           name: 'Brand One',
-          description: 'Test description',
-          createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };

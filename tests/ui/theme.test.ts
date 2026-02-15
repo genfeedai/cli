@@ -5,13 +5,13 @@ vi.mock('chalk', () => {
   const hexFn = () => chalkFn;
   return {
     default: {
-      hex: hexFn,
+      blue: chalkFn,
+      bold: chalkFn,
+      dim: chalkFn,
       green: chalkFn,
+      hex: hexFn,
       red: chalkFn,
       yellow: chalkFn,
-      blue: chalkFn,
-      dim: chalkFn,
-      bold: chalkFn,
     },
   };
 });

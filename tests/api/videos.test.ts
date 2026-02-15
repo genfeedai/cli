@@ -18,25 +18,25 @@ describe('api/videos', () => {
     it('creates a video with required fields', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-1',
-          status: 'pending',
-          prompt: 'A flying bird',
-          model: 'runway',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-1',
+          model: 'runway',
+          prompt: 'A flying bird',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createVideo({
-        text: 'A flying bird',
         brand: 'brand-1',
+        text: 'A flying bird',
       });
 
       expect(mockPost).toHaveBeenCalledWith('/videos', {
-        text: 'A flying bird',
         brand: 'brand-1',
+        text: 'A flying bird',
       });
       expect(result.id).toBe('vid-1');
       expect(result.status).toBe('pending');
@@ -45,28 +45,28 @@ describe('api/videos', () => {
     it('creates a video with optional duration', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-2',
-          status: 'pending',
-          prompt: 'Ocean waves',
-          model: 'runway',
-          duration: 10,
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          duration: 10,
+          id: 'vid-2',
+          model: 'runway',
+          prompt: 'Ocean waves',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createVideo({
-        text: 'Ocean waves',
         brand: 'brand-1',
         duration: 10,
+        text: 'Ocean waves',
       });
 
       expect(mockPost).toHaveBeenCalledWith('/videos', {
-        text: 'Ocean waves',
         brand: 'brand-1',
         duration: 10,
+        text: 'Ocean waves',
       });
       expect(result.duration).toBe(10);
     });
@@ -74,22 +74,22 @@ describe('api/videos', () => {
     it('creates a video with resolution', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-3',
-          status: 'pending',
-          prompt: 'City timelapse',
-          model: 'runway',
-          resolution: '1080p',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-3',
+          model: 'runway',
+          prompt: 'City timelapse',
+          resolution: '1080p',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createVideo({
-        text: 'City timelapse',
         brand: 'brand-1',
         resolution: '1080p',
+        text: 'City timelapse',
       });
 
       expect(result.resolution).toBe('1080p');
@@ -98,21 +98,21 @@ describe('api/videos', () => {
     it('creates a video with custom model', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-4',
-          status: 'pending',
-          prompt: 'Dancing robot',
-          model: 'sora',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-4',
+          model: 'sora',
+          prompt: 'Dancing robot',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await createVideo({
-        text: 'Dancing robot',
         brand: 'brand-1',
         model: 'sora',
+        text: 'Dancing robot',
       });
 
       expect(result.model).toBe('sora');
@@ -123,12 +123,12 @@ describe('api/videos', () => {
     it('returns video by id with pending status', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-1',
-          status: 'pending',
-          prompt: 'A flying bird',
-          model: 'runway',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-1',
+          model: 'runway',
+          prompt: 'A flying bird',
+          status: 'pending',
           updatedAt: '2024-01-01T00:00:00Z',
         },
       };
@@ -144,12 +144,12 @@ describe('api/videos', () => {
     it('returns processing video', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-1',
-          status: 'processing',
-          prompt: 'A flying bird',
-          model: 'runway',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-1',
+          model: 'runway',
+          prompt: 'A flying bird',
+          status: 'processing',
           updatedAt: '2024-01-01T00:00:30Z',
         },
       };
@@ -163,15 +163,15 @@ describe('api/videos', () => {
     it('returns completed video with url', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-1',
-          status: 'completed',
-          prompt: 'A flying bird',
-          model: 'runway',
-          url: 'https://cdn.genfeed.ai/videos/vid-1.mp4',
           brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:02:00Z',
           completedAt: '2024-01-01T00:02:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+          id: 'vid-1',
+          model: 'runway',
+          prompt: 'A flying bird',
+          status: 'completed',
+          updatedAt: '2024-01-01T00:02:00Z',
+          url: 'https://cdn.genfeed.ai/videos/vid-1.mp4',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -186,13 +186,13 @@ describe('api/videos', () => {
     it('returns failed video with error', async () => {
       const mockResponse = {
         data: {
-          id: 'vid-1',
-          status: 'failed',
-          prompt: 'Invalid prompt',
-          model: 'runway',
-          error: 'Generation failed',
           brandId: 'brand-1',
           createdAt: '2024-01-01T00:00:00Z',
+          error: 'Generation failed',
+          id: 'vid-1',
+          model: 'runway',
+          prompt: 'Invalid prompt',
+          status: 'failed',
           updatedAt: '2024-01-01T00:00:30Z',
         },
       };
