@@ -1,7 +1,52 @@
-import { BaseCliError, handleError as baseHandleError } from '@genfeedai/errors';
+import chalk from 'chalk';
 
-export type { HandleErrorOptions } from '@genfeedai/errors';
-export { ApiError, BaseCliError, formatError } from '@genfeedai/errors';
+// ── Base error classes (inlined from @genfeedai/errors) ─────────────────────
+
+export class BaseCliError extends Error {
+  suggestion?: string;
+  constructor(message: string, suggestion?: string) {
+    super(message);
+    this.name = 'BaseCliError';
+    this.suggestion = suggestion;
+  }
+}
+
+export class ApiError extends BaseCliError {
+  statusCode?: number;
+  constructor(message: string, statusCode?: number, suggestion?: string) {
+    super(message, suggestion);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+  }
+}
+
+export function formatError(error: unknown): string {
+  if (error instanceof BaseCliError) {
+    let output = chalk.red(`✖ ${error.message}`);
+    if (error.suggestion) {
+      output += `\n  ${chalk.dim(error.suggestion)}`;
+    }
+    return output;
+  }
+  if (error instanceof Error) {
+    return chalk.red(`✖ ${error.message}`);
+  }
+  return chalk.red('✖ An unknown error occurred');
+}
+
+export interface HandleErrorOptions {
+  replMode?: boolean;
+}
+
+function baseHandleError(error: unknown, options?: HandleErrorOptions): never {
+  console.error(formatError(error));
+  if (options?.replMode) {
+    throw error;
+  }
+  process.exit(1);
+}
+
+// ── CLI-specific errors ─────────────────────────────────────────────────────
 
 export class GenfeedError extends BaseCliError {
   constructor(message: string, suggestion?: string) {
