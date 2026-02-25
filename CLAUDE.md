@@ -60,3 +60,7 @@ Published as `@genfeedai/cli` on npm. Binary names: `genfeed`, `gf`.
 
 - `.agents/SESSIONS/` - Session logs
 - `../.agents/` - Workspace-level architecture/rules/SOPs
+
+## Learned Rules
+
+<!-- Rules added by Claude after corrections. Promote stable rules (30+ days) to main sections above. -->

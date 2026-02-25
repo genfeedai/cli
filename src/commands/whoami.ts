@@ -31,7 +31,7 @@ export const whoamiCommand = new Command('whoami')
 
       if (options.json) {
         printJson({
-          activeBrand: activeBrand ? { id: activeBrand.id, name: activeBrand.name } : null,
+          activeBrand: activeBrand ? { id: activeBrand.id, label: activeBrand.label } : null,
           organization: info.organization,
           scopes: info.scopes,
           user: info.user,
@@ -45,7 +45,7 @@ export const whoamiCommand = new Command('whoami')
       print(formatLabel('Organization', info.organization.name));
       print(formatLabel('Scopes', info.scopes.join(', ')));
       if (activeBrand) {
-        print(formatLabel('Active Brand', activeBrand.name));
+        print(formatLabel('Active Brand', activeBrand.label));
       } else if (activeBrandId) {
         print(formatLabel('Active Brand', chalk.dim('(not found - run gf brands select)')));
       } else {

@@ -5,7 +5,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { validateApiKey } from '@/api/auth.js';
 import { listBrands } from '@/api/brands.js';
-import { setActiveBrand, setApiKey, setRole } from '@/config/store.js';
+import { setActiveBrand, setApiKey, setOrganizationId, setRole } from '@/config/store.js';
 import { formatHeader, formatLabel, formatSuccess, formatWarning, print } from '@/ui/theme.js';
 import { GenfeedError, handleError } from '@/utils/errors.js';
 
@@ -68,8 +68,17 @@ function waitForOAuthCallback(): Promise<string> {
 
     function cleanup() {
       clearTimeout(timeout);
+      process.removeListener('SIGINT', onSigint);
       server.close();
     }
+
+    function onSigint() {
+      cleanup();
+      reject(new GenfeedError('Authentication cancelled'));
+      process.exit(130);
+    }
+
+    process.on('SIGINT', onSigint);
 
     // Listen on random available port
     server.listen(0, '127.0.0.1', () => {
@@ -147,6 +156,8 @@ async function completeLogin(apiKey: string): Promise<void> {
     const whoamiData = await validateApiKey();
     spinner.succeed();
 
+    await setOrganizationId(whoamiData.organization.id);
+
     print();
     print(formatSuccess(`Logged in as ${chalk.bold(whoamiData.organization.name)}`));
     print(formatLabel('Email', whoamiData.user.email));
@@ -158,27 +169,32 @@ async function completeLogin(apiKey: string): Promise<void> {
     }
 
     print();
-    const brands = await listBrands();
 
-    if (brands.length === 0) {
-      print(formatWarning('No brands found. Create one at https://app.genfeed.ai'));
-    } else if (brands.length === 1) {
-      await setActiveBrand(brands[0].id);
-      print(formatSuccess(`Active brand: ${chalk.bold(brands[0].name)}`));
-    } else {
-      const selected = await select({
-        choices: brands.map((brand) => ({
-          description: brand.description,
-          name: brand.name,
-          value: brand.id,
-        })),
-        message: 'Select a brand:',
-      });
+    try {
+      const brands = await listBrands(whoamiData.organization.id);
 
-      await setActiveBrand(selected);
-      const selectedBrand = brands.find((b) => b.id === selected);
-      print();
-      print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
+      if (brands.length === 0) {
+        print(formatWarning('No brands found. Create one at https://app.genfeed.ai'));
+      } else if (brands.length === 1) {
+        await setActiveBrand(brands[0].id);
+        print(formatSuccess(`Active brand: ${chalk.bold(brands[0].label)}`));
+      } else {
+        const selected = await select({
+          choices: brands.map((brand) => ({
+            description: brand.description,
+            name: brand.label,
+            value: brand.id,
+          })),
+          message: 'Select a brand:',
+        });
+
+        await setActiveBrand(selected);
+        const selectedBrand = brands.find((b) => b.id === selected);
+        print();
+        print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.label)}`));
+      }
+    } catch {
+      print(formatWarning('Could not fetch brands. Set one later with `gf brands`'));
     }
   } catch (error) {
     spinner.fail('Invalid API key');

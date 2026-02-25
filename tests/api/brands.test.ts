@@ -13,80 +13,69 @@ describe('api/brands', () => {
   });
 
   describe('listBrands', () => {
-    it('returns array of brands', async () => {
-      const mockResponse = {
+    it('flattens JSON:API collection response', async () => {
+      mockGet.mockResolvedValue({
         data: [
           {
-            createdAt: '2024-01-01T00:00:00Z',
-            description: 'First brand',
+            attributes: {
+              createdAt: '2024-01-01T00:00:00Z',
+              description: 'First brand',
+              label: 'Brand One',
+              updatedAt: '2024-01-01T00:00:00Z',
+            },
             id: 'brand-1',
-            name: 'Brand One',
-            updatedAt: '2024-01-01T00:00:00Z',
+            type: 'brand',
           },
           {
-            createdAt: '2024-01-02T00:00:00Z',
+            attributes: {
+              createdAt: '2024-01-02T00:00:00Z',
+              label: 'Brand Two',
+              updatedAt: '2024-01-02T00:00:00Z',
+            },
             id: 'brand-2',
-            name: 'Brand Two',
-            updatedAt: '2024-01-02T00:00:00Z',
+            type: 'brand',
           },
         ],
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
-      const result = await listBrands();
+      const result = await listBrands('org-123');
 
-      expect(mockGet).toHaveBeenCalledWith('/brands');
+      expect(mockGet).toHaveBeenCalledWith('/organizations/org-123/brands');
       expect(result).toHaveLength(2);
-      expect(result[0].name).toBe('Brand One');
-      expect(result[1].name).toBe('Brand Two');
+      expect(result[0].id).toBe('brand-1');
+      expect(result[0].label).toBe('Brand One');
+      expect(result[1].label).toBe('Brand Two');
     });
 
     it('returns empty array when no brands', async () => {
       mockGet.mockResolvedValue({ data: [] });
 
-      const result = await listBrands();
+      const result = await listBrands('org-123');
 
       expect(result).toHaveLength(0);
-    });
-
-    it('handles brands with optional fields', async () => {
-      const mockResponse = {
-        data: [
-          {
-            createdAt: '2024-01-01T00:00:00Z',
-            id: 'brand-1',
-            logoUrl: 'https://example.com/logo.png',
-            name: 'Brand One',
-            updatedAt: '2024-01-01T00:00:00Z',
-          },
-        ],
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await listBrands();
-
-      expect(result[0].logoUrl).toBe('https://example.com/logo.png');
     });
   });
 
   describe('getBrand', () => {
-    it('returns a single brand by id', async () => {
-      const mockResponse = {
+    it('flattens JSON:API single response', async () => {
+      mockGet.mockResolvedValue({
         data: {
-          createdAt: '2024-01-01T00:00:00Z',
-          description: 'Test description',
+          attributes: {
+            createdAt: '2024-01-01T00:00:00Z',
+            description: 'Test description',
+            label: 'Brand One',
+            updatedAt: '2024-01-01T00:00:00Z',
+          },
           id: 'brand-1',
-          name: 'Brand One',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'brand',
         },
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
       const result = await getBrand('brand-1');
 
       expect(mockGet).toHaveBeenCalledWith('/brands/brand-1');
       expect(result.id).toBe('brand-1');
-      expect(result.name).toBe('Brand One');
+      expect(result.label).toBe('Brand One');
     });
 
     it('propagates errors for invalid brand id', async () => {

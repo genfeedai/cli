@@ -6,19 +6,12 @@ import { post, requireAuth } from '@/api/client.js';
 import { print } from '@/ui/theme.js';
 import { handleError } from '@/utils/errors.js';
 
-interface AgentConversation {
-  _id: string;
-  title: string;
-  source: string;
-}
-
-interface AgentMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-interface AgentMessageResponse {
-  messages: AgentMessage[];
+interface AgentChatResponse {
+  conversationId: string;
+  message?: {
+    content?: string;
+    role?: string;
+  };
 }
 
 export const chatCommand = new Command('chat')
@@ -29,22 +22,6 @@ export const chatCommand = new Command('chat')
       await requireAuth();
 
       let conversationId: string = options.conversation ?? '';
-
-      // Create new conversation if none provided
-      if (!conversationId) {
-        const spinner = ora('Starting new conversation...').start();
-        try {
-          const conversation = await post<AgentConversation>('/v1/agent-conversations', {
-            source: 'cli',
-            title: 'CLI Chat',
-          });
-          conversationId = conversation._id;
-          spinner.succeed('Conversation started');
-        } catch (error) {
-          spinner.fail('Failed to start conversation');
-          throw error;
-        }
-      }
 
       print(chalk.dim('Type your message (Ctrl+C to exit)\n'));
 
@@ -59,18 +36,18 @@ export const chatCommand = new Command('chat')
         const spinner = ora('Thinking...').start();
 
         try {
-          const response = await post<AgentMessageResponse>(
-            `/v1/agent-conversations/${conversationId}/messages`,
-            { content: message, role: 'user' }
-          );
+          const response = await post<AgentChatResponse>('/agent/chat', {
+            content: message,
+            conversationId: conversationId || undefined,
+            source: 'agent',
+          });
 
           spinner.stop();
+          conversationId = response.conversationId || conversationId;
 
-          // Display the latest assistant message
-          const messages = response.messages ?? [];
-          const lastMessage = messages[messages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            print(`${chalk.green('\nAssistant:')} ${lastMessage.content}\n`);
+          const assistantMessage = response.message?.content?.trim();
+          if (assistantMessage) {
+            print(`${chalk.green('\nAssistant:')} ${assistantMessage}\n`);
           } else {
             print(chalk.dim('\nMessage sent.\n'));
           }

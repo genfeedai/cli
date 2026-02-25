@@ -68,9 +68,10 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "type": "module",
-  "version": "0.2.1"
+  "version": "0.3.0"
 }

@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import { getBrand, listBrands } from '@/api/brands.js';
 import { requireAuth } from '@/api/client.js';
-import { getActiveBrand, setActiveBrand } from '@/config/store.js';
+import { getActiveBrand, getOrganizationId, setActiveBrand } from '@/config/store.js';
 import {
   formatHeader,
   formatLabel,
@@ -22,8 +22,16 @@ export const brandsCommand = new Command('brands')
     try {
       await requireAuth();
 
+      const orgId = await getOrganizationId();
+      if (!orgId) {
+        throw new GenfeedError(
+          'No organization found',
+          'Re-authenticate with `gf login` to link your organization'
+        );
+      }
+
       const spinner = ora('Fetching brands...').start();
-      const brands = await listBrands();
+      const brands = await listBrands(orgId);
       spinner.stop();
 
       const activeBrandId = await getActiveBrand();
@@ -35,7 +43,7 @@ export const brandsCommand = new Command('brands')
             active: b.id === activeBrandId,
             description: b.description,
             id: b.id,
-            name: b.name,
+            label: b.label,
           })),
         });
         return;
@@ -52,7 +60,7 @@ export const brandsCommand = new Command('brands')
       for (const brand of brands) {
         const isActive = brand.id === activeBrandId;
         const marker = isActive ? chalk.green('●') : chalk.dim('○');
-        const name = isActive ? chalk.bold(brand.name) : brand.name;
+        const name = isActive ? chalk.bold(brand.label) : brand.label;
         const activeLabel = isActive ? chalk.dim(' (active)') : '';
 
         print(`  ${marker} ${name}${activeLabel}`);
@@ -75,8 +83,16 @@ brandsCommand
     try {
       await requireAuth();
 
+      const orgId = await getOrganizationId();
+      if (!orgId) {
+        throw new GenfeedError(
+          'No organization found',
+          'Re-authenticate with `gf login` to link your organization'
+        );
+      }
+
       const spinner = ora('Fetching brands...').start();
-      const brands = await listBrands();
+      const brands = await listBrands(orgId);
       spinner.stop();
 
       if (brands.length === 0) {
@@ -88,7 +104,7 @@ brandsCommand
       const selected = await select({
         choices: brands.map((brand) => ({
           description: brand.description,
-          name: brand.id === activeBrandId ? `${brand.name} (current)` : brand.name,
+          name: brand.id === activeBrandId ? `${brand.label} (current)` : brand.label,
           value: brand.id,
         })),
         default: activeBrandId,
@@ -99,7 +115,7 @@ brandsCommand
       const selectedBrand = brands.find((b) => b.id === selected);
 
       print();
-      print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.name)}`));
+      print(formatSuccess(`Active brand: ${chalk.bold(selectedBrand?.label)}`));
     } catch (error) {
       handleError(error);
     }
@@ -134,13 +150,13 @@ brandsCommand
           activeBrand: {
             description: brand.description,
             id: brand.id,
-            name: brand.name,
+            name: brand.label,
           },
         });
         return;
       }
 
-      print(formatSuccess(`Active brand: ${chalk.bold(brand.name)}`));
+      print(formatSuccess(`Active brand: ${chalk.bold(brand.label)}`));
       if (brand.description) {
         print(formatLabel('Description', brand.description));
       }

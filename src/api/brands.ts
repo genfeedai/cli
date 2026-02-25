@@ -1,29 +1,26 @@
 import { get } from './client.js';
+import {
+  flattenCollection,
+  flattenSingle,
+  type JsonApiCollectionResponse,
+  type JsonApiSingleResponse,
+} from './json-api.js';
 
 export interface Brand {
   id: string;
-  name: string;
+  label: string;
+  handle?: string;
   description?: string;
-  logoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface BrandsResponse {
-  data: Brand[];
-  meta?: {
-    total: number;
-    page: number;
-    limit: number;
-  };
-}
-
-export async function listBrands(): Promise<Brand[]> {
-  const response = await get<BrandsResponse>('/brands');
-  return response.data;
+export async function listBrands(organizationId: string): Promise<Brand[]> {
+  const response = await get<JsonApiCollectionResponse>(`/organizations/${organizationId}/brands`);
+  return flattenCollection<Brand>(response);
 }
 
 export async function getBrand(id: string): Promise<Brand> {
-  const response = await get<{ data: Brand }>(`/brands/${id}`);
-  return response.data;
+  const response = await get<JsonApiSingleResponse>(`/brands/${id}`);
+  return flattenSingle<Brand>(response);
 }

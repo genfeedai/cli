@@ -5,6 +5,7 @@
     "": {
       "name": "@genfeedai/cli",
       "dependencies": {
+        "@genfeedai/deserializer": "file:../cloud/packages/deserializer",
         "@inquirer/prompts": "8.2.0",
         "chalk": "5.6.2",
         "commander": "14.0.3",
@@ -105,6 +106,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.27.3", "", { "os": "win32", "cpu": "ia32" }, "sha512-QLKSFeXNS8+tHW7tZpMtjlNb7HKau0QDpwm49u0vUp9y1WOF+PEzkU84y9GqYaAVW8aH8f3GcBck26jh54cX4Q=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.3", "", { "os": "win32", "cpu": "x64" }, "sha512-4uJGhsxuptu3OcpVAzli+/gWusVGwZZHTlS63hh++ehExkVT8SgiEf7/uC/PclrPPkLhZqGgCTjd0VWLo6xMqA=="],
+
+    "@genfeedai/deserializer": ["@genfeedai/deserializer@file:../cloud/packages/deserializer", { "devDependencies": { "typescript": "5.9.3" } }],
 
     "@inquirer/ansi": ["@inquirer/ansi@2.0.3", "", {}, "sha512-g44zhR3NIKVs0zUesa4iMzExmZpLUdTLRMCStqX3GE5NT6VkPcxQGJ+uC8tDgBUC/vB1rUhUd55cOf++4NZcmw=="],
 

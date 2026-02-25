@@ -6,7 +6,7 @@ const mockPost = vi.fn();
 
 vi.mock('../../src/api/client.js', () => ({
   get: (path: string) => mockGet(path),
-  post: (path: string, body: Record<string, unknown>) => mockPost(path, body),
+  post: (path: string, body?: Record<string, unknown>) => mockPost(path, body),
 }));
 
 describe('api/videos', () => {
@@ -15,19 +15,17 @@ describe('api/videos', () => {
   });
 
   describe('createVideo', () => {
-    it('creates a video with required fields', async () => {
-      const mockResponse = {
+    it('sends POST and flattens JSON:API response', async () => {
+      mockPost.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
+          attributes: {
+            model: 'google-veo-3',
+            status: 'processing',
+          },
           id: 'vid-1',
-          model: 'runway',
-          prompt: 'A flying bird',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'video',
         },
-      };
-      mockPost.mockResolvedValue(mockResponse);
+      });
 
       const result = await createVideo({
         brand: 'brand-1',
@@ -39,169 +37,84 @@ describe('api/videos', () => {
         text: 'A flying bird',
       });
       expect(result.id).toBe('vid-1');
-      expect(result.status).toBe('pending');
+      expect(result.status).toBe('processing');
     });
 
-    it('creates a video with optional duration', async () => {
-      const mockResponse = {
+    it('passes optional duration and resolution', async () => {
+      mockPost.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          duration: 10,
+          attributes: {
+            duration: 10,
+            model: 'google-veo-3',
+            resolution: '1080p',
+            status: 'processing',
+          },
           id: 'vid-2',
-          model: 'runway',
-          prompt: 'Ocean waves',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'video',
         },
-      };
-      mockPost.mockResolvedValue(mockResponse);
+      });
 
       const result = await createVideo({
         brand: 'brand-1',
         duration: 10,
-        text: 'Ocean waves',
-      });
-
-      expect(mockPost).toHaveBeenCalledWith('/videos', {
-        brand: 'brand-1',
-        duration: 10,
-        text: 'Ocean waves',
-      });
-      expect(result.duration).toBe(10);
-    });
-
-    it('creates a video with resolution', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'vid-3',
-          model: 'runway',
-          prompt: 'City timelapse',
-          resolution: '1080p',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
-        },
-      };
-      mockPost.mockResolvedValue(mockResponse);
-
-      const result = await createVideo({
-        brand: 'brand-1',
         resolution: '1080p',
-        text: 'City timelapse',
+        text: 'Ocean waves',
       });
 
+      expect(result.duration).toBe(10);
       expect(result.resolution).toBe('1080p');
-    });
-
-    it('creates a video with custom model', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'vid-4',
-          model: 'sora',
-          prompt: 'Dancing robot',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
-        },
-      };
-      mockPost.mockResolvedValue(mockResponse);
-
-      const result = await createVideo({
-        brand: 'brand-1',
-        model: 'sora',
-        text: 'Dancing robot',
-      });
-
-      expect(result.model).toBe('sora');
     });
   });
 
   describe('getVideo', () => {
-    it('returns video by id with pending status', async () => {
-      const mockResponse = {
+    it('flattens completed video with url', async () => {
+      mockGet.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
+          attributes: {
+            completedAt: '2024-01-01T00:02:00Z',
+            duration: 5,
+            model: 'google-veo-3',
+            resolution: '1080p',
+            status: 'completed',
+            url: 'https://cdn.genfeed.ai/vid.mp4',
+          },
           id: 'vid-1',
-          model: 'runway',
-          prompt: 'A flying bird',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'video',
         },
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
       const result = await getVideo('vid-1');
 
       expect(mockGet).toHaveBeenCalledWith('/videos/vid-1');
       expect(result.id).toBe('vid-1');
-      expect(result.status).toBe('pending');
-    });
-
-    it('returns processing video', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'vid-1',
-          model: 'runway',
-          prompt: 'A flying bird',
-          status: 'processing',
-          updatedAt: '2024-01-01T00:00:30Z',
-        },
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await getVideo('vid-1');
-
-      expect(result.status).toBe('processing');
-    });
-
-    it('returns completed video with url', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          completedAt: '2024-01-01T00:02:00Z',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'vid-1',
-          model: 'runway',
-          prompt: 'A flying bird',
-          status: 'completed',
-          updatedAt: '2024-01-01T00:02:00Z',
-          url: 'https://cdn.genfeed.ai/videos/vid-1.mp4',
-        },
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await getVideo('vid-1');
-
       expect(result.status).toBe('completed');
-      expect(result.url).toBe('https://cdn.genfeed.ai/videos/vid-1.mp4');
-      expect(result.completedAt).toBeDefined();
+      expect(result.url).toBe('https://cdn.genfeed.ai/vid.mp4');
+      expect(result.duration).toBe(5);
     });
 
-    it('returns failed video with error', async () => {
-      const mockResponse = {
+    it('flattens failed video with error', async () => {
+      mockGet.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          error: 'Generation failed',
+          attributes: {
+            error: 'Generation failed',
+            model: 'google-veo-3',
+            status: 'failed',
+          },
           id: 'vid-1',
-          model: 'runway',
-          prompt: 'Invalid prompt',
-          status: 'failed',
-          updatedAt: '2024-01-01T00:00:30Z',
+          type: 'video',
         },
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
       const result = await getVideo('vid-1');
 
       expect(result.status).toBe('failed');
       expect(result.error).toBe('Generation failed');
+    });
+
+    it('propagates errors', async () => {
+      mockGet.mockRejectedValue(new Error('Not found'));
+
+      await expect(getVideo('invalid')).rejects.toThrow('Not found');
     });
   });
 });

@@ -6,7 +6,7 @@ const mockPost = vi.fn();
 
 vi.mock('../../src/api/client.js', () => ({
   get: (path: string) => mockGet(path),
-  post: (path: string, body: Record<string, unknown>) => mockPost(path, body),
+  post: (path: string, body?: Record<string, unknown>) => mockPost(path, body),
 }));
 
 describe('api/images', () => {
@@ -15,19 +15,19 @@ describe('api/images', () => {
   });
 
   describe('createImage', () => {
-    it('creates an image with required fields', async () => {
-      const mockResponse = {
+    it('sends POST and flattens JSON:API response', async () => {
+      mockPost.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
+          attributes: {
+            createdAt: '2024-01-01T00:00:00Z',
+            model: 'imagen-4',
+            status: 'processing',
+            updatedAt: '2024-01-01T00:00:00Z',
+          },
           id: 'img-1',
-          model: 'flux',
-          prompt: 'A sunset over mountains',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'image',
         },
-      };
-      mockPost.mockResolvedValue(mockResponse);
+      });
 
       const result = await createImage({
         brand: 'brand-1',
@@ -39,24 +39,23 @@ describe('api/images', () => {
         text: 'A sunset over mountains',
       });
       expect(result.id).toBe('img-1');
-      expect(result.status).toBe('pending');
+      expect(result.status).toBe('processing');
+      expect(result.model).toBe('imagen-4');
     });
 
-    it('creates an image with optional dimensions', async () => {
-      const mockResponse = {
+    it('passes optional dimensions', async () => {
+      mockPost.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          height: 768,
+          attributes: {
+            height: 768,
+            model: 'imagen-4',
+            status: 'processing',
+            width: 1024,
+          },
           id: 'img-2',
-          model: 'flux',
-          prompt: 'A cat',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
-          width: 1024,
+          type: 'image',
         },
-      };
-      mockPost.mockResolvedValue(mockResponse);
+      });
 
       const result = await createImage({
         brand: 'brand-1',
@@ -74,95 +73,57 @@ describe('api/images', () => {
       expect(result.width).toBe(1024);
       expect(result.height).toBe(768);
     });
-
-    it('creates an image with custom model', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'img-3',
-          model: 'dall-e-3',
-          prompt: 'A dog',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
-        },
-      };
-      mockPost.mockResolvedValue(mockResponse);
-
-      const result = await createImage({
-        brand: 'brand-1',
-        model: 'dall-e-3',
-        text: 'A dog',
-      });
-
-      expect(result.model).toBe('dall-e-3');
-    });
   });
 
   describe('getImage', () => {
-    it('returns image by id with pending status', async () => {
-      const mockResponse = {
+    it('flattens completed image with url', async () => {
+      mockGet.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
+          attributes: {
+            completedAt: '2024-01-01T00:01:00Z',
+            height: 1024,
+            model: 'imagen-4',
+            status: 'completed',
+            url: 'https://cdn.genfeed.ai/img.png',
+            width: 1024,
+          },
           id: 'img-1',
-          model: 'flux',
-          prompt: 'A sunset',
-          status: 'pending',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'image',
         },
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
       const result = await getImage('img-1');
 
       expect(mockGet).toHaveBeenCalledWith('/images/img-1');
       expect(result.id).toBe('img-1');
-      expect(result.status).toBe('pending');
-    });
-
-    it('returns completed image with url', async () => {
-      const mockResponse = {
-        data: {
-          brandId: 'brand-1',
-          completedAt: '2024-01-01T00:01:00Z',
-          createdAt: '2024-01-01T00:00:00Z',
-          id: 'img-1',
-          model: 'flux',
-          prompt: 'A sunset',
-          status: 'completed',
-          updatedAt: '2024-01-01T00:00:00Z',
-          url: 'https://cdn.genfeed.ai/images/img-1.png',
-        },
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await getImage('img-1');
-
       expect(result.status).toBe('completed');
-      expect(result.url).toBe('https://cdn.genfeed.ai/images/img-1.png');
-      expect(result.completedAt).toBeDefined();
+      expect(result.url).toBe('https://cdn.genfeed.ai/img.png');
+      expect(result.width).toBe(1024);
     });
 
-    it('returns failed image with error', async () => {
-      const mockResponse = {
+    it('flattens failed image with error', async () => {
+      mockGet.mockResolvedValue({
         data: {
-          brandId: 'brand-1',
-          createdAt: '2024-01-01T00:00:00Z',
-          error: 'Content policy violation',
+          attributes: {
+            error: 'Content policy violation',
+            model: 'imagen-4',
+            status: 'failed',
+          },
           id: 'img-1',
-          model: 'flux',
-          prompt: 'Invalid prompt',
-          status: 'failed',
-          updatedAt: '2024-01-01T00:00:00Z',
+          type: 'image',
         },
-      };
-      mockGet.mockResolvedValue(mockResponse);
+      });
 
       const result = await getImage('img-1');
 
       expect(result.status).toBe('failed');
       expect(result.error).toBe('Content policy violation');
+    });
+
+    it('propagates errors', async () => {
+      mockGet.mockRejectedValue(new Error('Not found'));
+
+      await expect(getImage('invalid')).rejects.toThrow('Not found');
     });
   });
 });

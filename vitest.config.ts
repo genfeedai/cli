@@ -27,6 +27,7 @@ export default defineConfig({
       },
     },
     environment: 'node',
+    exclude: ['tests/integration/**/*.test.ts'],
     globals: true,
     include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],

@@ -1,3 +1,4 @@
+import { requireAuth } from '@/api/client.js';
 import { getRole } from '@/config/store.js';
 import { AdminRequiredError } from '@/utils/errors.js';
 
@@ -7,6 +8,7 @@ import { AdminRequiredError } from '@/utils/errors.js';
  */
 export function requireAdmin<T extends (...args: never[]) => Promise<void>>(action: T): T {
   return (async (...args: Parameters<T>) => {
+    await requireAuth();
     const role = await getRole();
     if (role !== 'admin') {
       throw new AdminRequiredError();

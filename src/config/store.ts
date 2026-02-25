@@ -174,6 +174,18 @@ export async function setActivePersona(handle: string, profileName?: string): Pr
   await setProfileField('activePersona', handle, profileName);
 }
 
+export async function getOrganizationId(): Promise<string | undefined> {
+  const { profile } = await getActiveProfile();
+  return profile.organizationId;
+}
+
+export async function setOrganizationId(
+  organizationId: string,
+  profileName?: string
+): Promise<void> {
+  await setProfileField('organizationId', organizationId, profileName);
+}
+
 export async function setRole(role: 'user' | 'admin', profileName?: string): Promise<void> {
   await setProfileField('role', role, profileName);
 }

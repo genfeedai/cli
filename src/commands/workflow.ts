@@ -2,23 +2,25 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
 import { get, post, requireAuth } from '@/api/client.js';
+import {
+  flattenCollection,
+  flattenSingle,
+  type JsonApiCollectionResponse,
+  type JsonApiSingleResponse,
+} from '@/api/json-api.js';
 import { formatHeader, print, printJson } from '@/ui/theme.js';
 import { handleError } from '@/utils/errors.js';
 
 interface Workflow {
-  _id: string;
-  name: string;
+  id: string;
   label?: string;
   description?: string;
-}
-
-interface WorkflowListResponse {
-  data: Workflow[];
+  key?: string;
+  status?: string;
 }
 
 interface WorkflowExecution {
-  _id: string;
-  id?: string;
+  id: string;
 }
 
 export const workflowCommand = new Command('workflow')
@@ -33,10 +35,10 @@ export const workflowCommand = new Command('workflow')
 
           const spinner = ora('Fetching workflows...').start();
           try {
-            const response = await get<WorkflowListResponse>('/v1/workflows');
+            const response = await get<JsonApiCollectionResponse>('/workflows');
+            const workflows = flattenCollection<Workflow>(response);
             spinner.stop();
 
-            const workflows = response.data ?? [];
             if (workflows.length === 0) {
               print(chalk.dim('No workflows found.'));
               return;
@@ -49,7 +51,7 @@ export const workflowCommand = new Command('workflow')
 
             print(formatHeader('\nWorkflows:\n'));
             for (const wf of workflows) {
-              print(`  ${chalk.cyan(wf.label ?? wf.name)} ${chalk.dim(`(${wf._id})`)}`);
+              print(`  ${chalk.cyan(wf.label ?? wf.key ?? wf.id)} ${chalk.dim(`(${wf.id})`)}`);
               if (wf.description) {
                 print(`  ${chalk.dim(wf.description)}`);
               }
@@ -68,17 +70,20 @@ export const workflowCommand = new Command('workflow')
     new Command('run')
       .description('Execute a workflow')
       .argument('<id>', 'Workflow ID to execute')
-      .action(async (id) => {
+      .option('-t, --trigger <trigger>', 'Execution trigger', 'manual')
+      .action(async (id, options) => {
         try {
           await requireAuth();
 
           const spinner = ora('Executing workflow...').start();
           try {
-            const response = await post<WorkflowExecution>('/v1/workflow-executions', {
-              workflowId: id,
+            const response = await post<JsonApiSingleResponse>('/workflow-executions', {
+              trigger: options.trigger,
+              workflow: id,
             });
+            const execution = flattenSingle<WorkflowExecution>(response);
             spinner.succeed('Workflow execution started');
-            print(chalk.dim(`Execution ID: ${response._id ?? response.id}`));
+            print(chalk.dim(`Execution ID: ${execution.id}`));
           } catch (error) {
             spinner.fail('Failed to execute workflow');
             throw error;
