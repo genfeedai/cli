@@ -164,3 +164,37 @@ brandsCommand
       handleError(error);
     }
   });
+
+brandsCommand
+  .command('show')
+  .description('Show full brand details')
+  .argument('<id>', 'Brand ID')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    try {
+      await requireAuth();
+
+      const spinner = ora('Fetching brand...').start();
+      const brand = await getBrand(id);
+      spinner.stop();
+
+      if (options.json) {
+        printJson(brand);
+        return;
+      }
+
+      print(formatHeader('\nBrand Details:\n'));
+      print(formatLabel('ID', brand.id));
+      print(formatLabel('Label', brand.label));
+      if (brand.handle) {
+        print(formatLabel('Handle', brand.handle));
+      }
+      if (brand.description) {
+        print(formatLabel('Description', brand.description));
+      }
+      print(formatLabel('Created', brand.createdAt));
+      print(formatLabel('Updated', brand.updatedAt));
+    } catch (error) {
+      handleError(error);
+    }
+  });
