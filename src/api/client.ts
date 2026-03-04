@@ -61,6 +61,16 @@ export async function post<T>(path: string, body?: Record<string, unknown>): Pro
   return client<T>(path, { body, method: 'POST' });
 }
 
+export async function patch<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+  const client = await createClient();
+  return client<T>(path, { body, method: 'PATCH' });
+}
+
+export async function del<T>(path: string): Promise<T> {
+  const client = await createClient();
+  return client<T>(path, { method: 'DELETE' });
+}
+
 export async function requireAuth(): Promise<string> {
   const apiKey = await getApiKey();
   if (!apiKey) {

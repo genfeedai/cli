@@ -2,19 +2,27 @@
 import { createInterface } from 'node:readline/promises';
 import chalk from 'chalk';
 import { Command } from 'commander';
+import { batchCommand } from './commands/batch.js';
 import { brandsCommand } from './commands/brands.js';
 import { captionCommand } from './commands/caption.js';
 import { chatCommand } from './commands/chat.js';
+import { configCommand } from './commands/config.js';
+import { creditsCommand } from './commands/credits.js';
 import { darkroomCommand } from './commands/darkroom.js';
 import { datasetCommand } from './commands/dataset.js';
 import { generateCommand } from './commands/generate/index.js';
+import { insightsCommand } from './commands/insights.js';
 import { libraryCommand } from './commands/library.js';
 import { loginCommand } from './commands/login.js';
 import { logoutCommand } from './commands/logout.js';
+import { performanceCommand } from './commands/performance.js';
 import { personasCommand } from './commands/personas.js';
+import { postsCommand } from './commands/posts.js';
 import { profileCommand } from './commands/profile.js';
 import { publishCommand } from './commands/publish.js';
+import { scheduleCommand } from './commands/schedule.js';
 import { statusCommand } from './commands/status.js';
+import { templateCommand } from './commands/template.js';
 import { trainCommand } from './commands/train.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { workflowCommand } from './commands/workflow.js';
@@ -36,7 +44,7 @@ const program = new Command();
 program
   .name('gf')
   .description('Unified CLI for Genfeed.ai')
-  .version('0.3.0')
+  .version('0.4.0')
   .addCommand(loginCommand)
   .addCommand(logoutCommand)
   .addCommand(whoamiCommand)
@@ -47,7 +55,15 @@ program
   .addCommand(workflowCommand)
   .addCommand(publishCommand)
   .addCommand(libraryCommand)
-  .addCommand(profileCommand);
+  .addCommand(profileCommand)
+  .addCommand(batchCommand)
+  .addCommand(templateCommand)
+  .addCommand(creditsCommand)
+  .addCommand(insightsCommand)
+  .addCommand(scheduleCommand)
+  .addCommand(performanceCommand)
+  .addCommand(postsCommand)
+  .addCommand(configCommand);
 
 // --- Admin commands (hidden from --help for regular users) ---
 program
@@ -79,13 +95,21 @@ async function printHelp(): Promise<void> {
   print('  logout         Remove stored credentials');
   print('  whoami         Show current user and organization');
   print('  brands         Manage brands');
-  print('  generate       Generate AI content (image, video)');
+  print('  generate       Generate AI content (image, video, article)');
   print('  status         Check the status of a generation job');
   print('  chat           Start an interactive agent chat session');
   print('  workflow       Manage and execute workflows');
   print('  publish        Publish content to social media');
   print('  library        Browse content library');
   print('  profile        Manage CLI profiles');
+  print('  batch          Batch content generation');
+  print('  template       Manage content templates');
+  print('  credits        View credit usage and billing');
+  print('  insights       AI-powered content insights');
+  print('  schedule       Content scheduling and calendar');
+  print('  performance    Content performance analytics');
+  print('  posts          Manage published/scheduled posts');
+  print('  config         Manage CLI configuration');
 
   if (role === 'admin') {
     print();

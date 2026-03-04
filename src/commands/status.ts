@@ -1,13 +1,14 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
+import { getArticle } from '@/api/articles.js';
 import { requireAuth } from '@/api/client.js';
 import { getImage } from '@/api/images.js';
 import { getVideo } from '@/api/videos.js';
 import { formatError, formatLabel, print, printJson } from '@/ui/theme.js';
 import { ApiError, handleError } from '@/utils/errors.js';
 
-type ContentType = 'image' | 'video';
+type ContentType = 'article' | 'image' | 'video';
 type Status = 'pending' | 'processing' | 'completed' | 'failed';
 
 interface StatusResult {
@@ -22,6 +23,7 @@ interface StatusResult {
   dimensions?: { width: number; height: number };
   duration?: number;
   resolution?: string;
+  title?: string;
 }
 
 function formatStatus(status: Status): string {
@@ -39,8 +41,8 @@ function formatStatus(status: Status): string {
 
 export const statusCommand = new Command('status')
   .description('Check the status of a generation job')
-  .argument('<id>', 'The ID of the image or video')
-  .option('-t, --type <type>', 'Content type (image or video)', 'image')
+  .argument('<id>', 'The ID of the image, video, or article')
+  .option('-t, --type <type>', 'Content type (image, video, or article)', 'image')
   .option('--json', 'Output as JSON')
   .action(async (id, options) => {
     try {
@@ -51,7 +53,19 @@ export const statusCommand = new Command('status')
       let result: StatusResult;
 
       try {
-        if (options.type === 'video') {
+        if (options.type === 'article') {
+          const article = await getArticle(id);
+          result = {
+            completedAt: article.completedAt,
+            createdAt: article.createdAt,
+            error: article.error,
+            id: article.id,
+            model: article.model ?? 'n/a',
+            status: article.status,
+            title: article.title,
+            type: 'article',
+          };
+        } else if (options.type === 'video') {
           const video = await getVideo(id);
           result = {
             completedAt: video.completedAt,
@@ -140,6 +154,10 @@ export const statusCommand = new Command('status')
           const completedDate = new Date(result.completedAt);
           print(formatLabel('Completed', completedDate.toLocaleString()));
         }
+      }
+
+      if (result.type === 'article' && result.title) {
+        print(formatLabel('Title', result.title));
       }
 
       if (result.status === 'failed' && result.error) {
