@@ -4,7 +4,11 @@
     "genfeed": "dist/index.js",
     "gf": "dist/index.js"
   },
+  "bundledDependencies": [
+    "@genfeedai/deserializer"
+  ],
   "dependencies": {
+    "@genfeedai/deserializer": "file:./vendor/deserializer",
     "@inquirer/prompts": "8.2.0",
     "chalk": "5.6.2",
     "commander": "14.0.3",
@@ -30,7 +34,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "vendor/deserializer"
   ],
   "homepage": "https://genfeed.ai",
   "keywords": [

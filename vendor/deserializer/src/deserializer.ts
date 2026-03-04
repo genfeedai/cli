@@ -26,7 +26,7 @@ type JsonApiDocumentWithData = JsonApiDocument & {
 interface RelationshipDeserializerOptions {
   valueForRelationship: (
     relationship: JsonApiResourceIdentifier,
-    included?: Record<string, unknown> | null
+    included?: Record<string, unknown> | null,
   ) => unknown;
 }
 
@@ -47,7 +47,9 @@ interface JsonApiDeserializerOptions {
 }
 
 interface JsonApiDeserializerRuntimeOptions
-  extends Required<Pick<JsonApiDeserializerOptions, 'keyForAttribute' | 'nullIfMissing'>> {
+  extends Required<
+    Pick<JsonApiDeserializerOptions, 'keyForAttribute' | 'nullIfMissing'>
+  > {
   [relationshipType: string]:
     | RelationshipDeserializerOptions
     | JsonApiDeserializerOptions['keyForAttribute']
@@ -60,6 +62,8 @@ interface JsonApiDeserializerRuntime {
   resource<TOutput = unknown>(document: JsonApiDocument): TOutput;
 }
 
+// ── Native camelCase conversion (replaces inflected dependency) ──
+
 function toCamelCase(str: string): string {
   return str
     .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
@@ -68,18 +72,21 @@ function toCamelCase(str: string): string {
 
 function convertKey(
   key: string,
-  keyForAttribute: JsonApiDeserializerOptions['keyForAttribute']
+  keyForAttribute: JsonApiDeserializerOptions['keyForAttribute'],
 ): string {
   if (typeof keyForAttribute === 'function') {
     return keyForAttribute(key);
   }
+  // Default and most common case
   return toCamelCase(key);
 }
+
+// ── Native Deserializer (replaces ts-jsonapi + lodash) ──
 
 class NativeDeserializer {
   constructor(
     _jsonapi: JsonApiDocument,
-    private opts: JsonApiDeserializerRuntimeOptions
+    private opts: JsonApiDeserializerRuntimeOptions,
   ) {}
 
   deserialize<TOutput = unknown>(document: JsonApiDocument): TOutput {
@@ -91,17 +98,20 @@ class NativeDeserializer {
 
   collection<TOutput = unknown>(document: JsonApiDocument): TOutput[] {
     return (document.data as JsonApiResource[]).map(
-      (d) => this.processResource(document, d) as TOutput
+      (d) => this.processResource(document, d) as TOutput,
     );
   }
 
   resource<TOutput = unknown>(document: JsonApiDocument): TOutput {
-    return this.processResource(document, document.data as JsonApiResource) as TOutput;
+    return this.processResource(
+      document,
+      document.data as JsonApiResource,
+    ) as TOutput;
   }
 
   private processResource(
     document: JsonApiDocument,
-    data: JsonApiResource
+    data: JsonApiResource,
   ): Record<string, unknown> {
     const utils = new DeserializerUtils(document, data, this.opts);
     return utils.perform();
@@ -118,7 +128,7 @@ class DeserializerUtils {
   constructor(
     private jsonapi: JsonApiDocument,
     private data: JsonApiResource,
-    private opts: JsonApiDeserializerRuntimeOptions
+    private opts: JsonApiDeserializerRuntimeOptions,
   ) {}
 
   perform(): Record<string, unknown> {
@@ -142,7 +152,9 @@ class DeserializerUtils {
       const newKey = convertKey(key, this.opts.keyForAttribute);
       if (Array.isArray(value)) {
         result[newKey] = value.map((item) =>
-          isPlainObject(item) ? this.convertKeys(item as Record<string, unknown>) : item
+          isPlainObject(item)
+            ? this.convertKeys(item as Record<string, unknown>)
+            : item,
         );
       } else if (isPlainObject(value)) {
         result[newKey] = this.convertKeys(value as Record<string, unknown>);
@@ -168,9 +180,8 @@ class DeserializerUtils {
       if (relationship.data === null) {
         dest[convertKey(key, this.opts.keyForAttribute)] = null;
       } else if (Array.isArray(relationship.data)) {
-        dest[convertKey(key, this.opts.keyForAttribute)] = relationship.data.map((rd) =>
-          this.extractIncludes(rd, key, from)
-        );
+        dest[convertKey(key, this.opts.keyForAttribute)] =
+          relationship.data.map((rd) => this.extractIncludes(rd, key, from));
       } else {
         const includes = this.extractIncludes(relationship.data, key, from);
         if (includes) {
@@ -185,18 +196,28 @@ class DeserializerUtils {
   private extractIncludes(
     relationshipData: JsonApiResourceIdentifier,
     relationshipName: string,
-    from: JsonApiResource
+    from: JsonApiResource,
   ): unknown {
-    const included = this.findIncluded(relationshipData, relationshipName, from);
+    const included = this.findIncluded(
+      relationshipData,
+      relationshipName,
+      from,
+    );
     return this.getValueForRelationship(relationshipData, included);
   }
 
   private getValueForRelationship(
     relationshipData: JsonApiResourceIdentifier,
-    included: Record<string, unknown> | null
+    included: Record<string, unknown> | null,
   ): unknown {
-    const relOpts = this.opts[relationshipData.type] as RelationshipDeserializerOptions | undefined;
-    if (relOpts && typeof relOpts === 'object' && 'valueForRelationship' in relOpts) {
+    const relOpts = this.opts[relationshipData.type] as
+      | RelationshipDeserializerOptions
+      | undefined;
+    if (
+      relOpts &&
+      typeof relOpts === 'object' &&
+      'valueForRelationship' in relOpts
+    ) {
       return relOpts.valueForRelationship(relationshipData, included);
     }
     return included;
@@ -205,14 +226,15 @@ class DeserializerUtils {
   private findIncluded(
     relationshipData: JsonApiResourceIdentifier,
     relationshipName: string,
-    from: JsonApiResource
+    from: JsonApiResource,
   ): Record<string, unknown> | null {
     if (!this.jsonapi.included || !relationshipData) {
       return null;
     }
 
     const included = this.jsonapi.included.find(
-      (inc) => inc.id === relationshipData.id && inc.type === relationshipData.type
+      (inc) =>
+        inc.id === relationshipData.id && inc.type === relationshipData.type,
     );
 
     const includedObject = {
@@ -227,7 +249,7 @@ class DeserializerUtils {
         ai.to.type === includedObject.to.type &&
         ai.from.id === includedObject.from.id &&
         ai.from.type === includedObject.from.type &&
-        ai.relation === includedObject.relation
+        ai.relation === includedObject.relation,
     );
 
     if (alreadySeen) {
@@ -256,9 +278,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   );
 }
 
+// ── Public API (unchanged interface) ──
+
 function buildRuntimeOptions(
   document?: JsonApiDocument,
-  customOptions?: JsonApiDeserializerOptions
+  customOptions?: JsonApiDeserializerOptions,
 ): JsonApiDeserializerRuntimeOptions {
   const options: JsonApiDeserializerRuntimeOptions = {
     keyForAttribute: customOptions?.keyForAttribute ?? 'camelCase',
@@ -270,7 +294,9 @@ function buildRuntimeOptions(
     ...(customOptions?.relationships ?? {}),
   };
 
-  for (const [relationshipType, config] of Object.entries(relationshipOptions)) {
+  for (const [relationshipType, config] of Object.entries(
+    relationshipOptions,
+  )) {
     options[relationshipType] = config;
   }
 
@@ -278,7 +304,7 @@ function buildRuntimeOptions(
 }
 
 function inferRelationshipOptions(
-  document?: JsonApiDocument
+  document?: JsonApiDocument,
 ): Record<string, RelationshipDeserializerOptions> {
   if (!hasPrimaryData(document) || hasIncludedResources(document)) {
     return {};
@@ -330,7 +356,9 @@ function hasIncludedResources(document: JsonApiDocument): boolean {
   return Array.isArray(document.included) && document.included.length > 0;
 }
 
-function hasPrimaryData(document?: JsonApiDocument): document is JsonApiDocumentWithData {
+function hasPrimaryData(
+  document?: JsonApiDocument,
+): document is JsonApiDocumentWithData {
   if (!document) {
     return false;
   }
@@ -340,29 +368,32 @@ function hasPrimaryData(document?: JsonApiDocument): document is JsonApiDocument
   return typeof document.data === 'object' && document.data !== null;
 }
 
-function normalizeResources(data: JsonApiResource | JsonApiResource[]): JsonApiResource[] {
+function normalizeResources(
+  data: JsonApiResource | JsonApiResource[],
+): JsonApiResource[] {
   return Array.isArray(data) ? data : [data];
 }
 
 export function getDeserializer<TOutput = unknown>(
   document?: JsonApiDocument,
-  customOptions?: JsonApiDeserializerOptions
+  customOptions?: JsonApiDeserializerOptions,
 ): JsonApiDeserializerRuntime | TOutput {
   const options = buildRuntimeOptions(document, customOptions);
-  const deserializer = new NativeDeserializer(document || { data: [] }, options) as unknown as
-    | JsonApiDeserializerRuntime
-    | TOutput;
+  const deserializer = new NativeDeserializer(
+    document || { data: [] },
+    options,
+  ) as unknown as JsonApiDeserializerRuntime;
 
   if (!document || !hasPrimaryData(document)) {
     return deserializer;
   }
 
-  return (deserializer as JsonApiDeserializerRuntime).deserialize<TOutput>(
-    document as JsonApiDocumentWithData
-  );
+  return deserializer.deserialize<TOutput>(document as JsonApiDocumentWithData);
 }
 
-export function isDeserializerRuntime(value: unknown): value is JsonApiDeserializerRuntime {
+export function isDeserializerRuntime(
+  value: unknown,
+): value is JsonApiDeserializerRuntime {
   return (
     typeof value === 'object' &&
     value !== null &&
