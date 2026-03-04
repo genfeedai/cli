@@ -13,7 +13,7 @@
   > What image | video do you want to create? _
 ```
 
-CLI tool for [Genfeed.ai](https://genfeed.ai) - Generate AI images and videos from your terminal.
+CLI tool for [Genfeed.ai](https://genfeed.ai) - Generate, schedule, analyze, and publish AI content from your terminal.
 
 ## Requirements
 
@@ -138,6 +138,27 @@ With options:
 genfeed generate video "Your prompt" --model google-veo-3 --duration 10 --resolution 1080p --output ./video.mp4
 ```
 
+### Article Generation
+
+Generate an article:
+
+```bash
+genfeed generate article "Write about AI marketing trends" --category marketing
+```
+
+Generate long-form X article:
+
+```bash
+genfeed generate article-x "Write a founder update thread"
+```
+
+Start async and poll later:
+
+```bash
+genfeed generate article "Your prompt" --no-wait
+genfeed status <article-id> --type article
+```
+
 ### Check Status
 
 Check image status:
@@ -150,6 +171,40 @@ Check video status:
 
 ```bash
 genfeed status <id> --type video
+```
+
+Check article status:
+
+```bash
+genfeed status <id> --type article
+```
+
+### Batch Generation
+
+```bash
+genfeed batch create -n 5 -p twitter,linkedin --topics ai,product --style professional
+genfeed batch list
+genfeed batch show <batch-id>
+genfeed batch approve <batch-id>
+```
+
+### Templates
+
+```bash
+genfeed template list
+genfeed template create --label "LinkedIn Hook" --purpose prompt --content "Write a hook about {{topic}}"
+genfeed template use <template-id> --variables '{"topic":"AI workflows"}'
+```
+
+### Scheduling and Insights
+
+```bash
+genfeed schedule calendar
+genfeed insights
+genfeed insights times --platform twitter
+genfeed performance weekly
+genfeed credits summary
+genfeed posts list --platform twitter --status published
 ```
 
 ### Darkroom (Admin)

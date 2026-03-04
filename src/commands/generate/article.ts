@@ -37,14 +37,23 @@ export const articleCommand = new Command('article')
 
       if (!options.wait) {
         spinner.succeed('Article generation started');
+        const articleStatusId = activity.articleId ?? activity.id;
 
         if (options.json) {
-          printJson({ id: activity.id, status: activity.status });
+          printJson({
+            articleId: activity.articleId,
+            id: activity.id,
+            status: activity.status,
+            statusCommand: `gf status ${articleStatusId} --type article`,
+          });
         } else {
           print(formatLabel('ID', activity.id));
           print(formatLabel('Status', activity.status));
+          if (activity.articleId) {
+            print(formatLabel('Article ID', activity.articleId));
+          }
           print();
-          print(chalk.dim(`Check status with: gf status ${activity.id}`));
+          print(chalk.dim(`Check status with: gf status ${articleStatusId} --type article`));
         }
         return;
       }

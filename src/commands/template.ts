@@ -17,6 +17,22 @@ import { handleError } from '@/utils/errors.js';
 
 export const templateCommand = new Command('template').description('Manage content templates');
 
+async function readPipedStdin(): Promise<string> {
+  if (process.stdin.isTTY) {
+    return '';
+  }
+
+  return await new Promise<string>((resolve, reject) => {
+    let data = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+      data += chunk;
+    });
+    process.stdin.on('end', () => resolve(data.trim()));
+    process.stdin.on('error', reject);
+  });
+}
+
 templateCommand
   .command('list')
   .description('List templates')
@@ -118,9 +134,9 @@ templateCommand
     try {
       await requireAuth();
 
-      const content = options.content ?? '';
+      const content = options.content ?? (await readPipedStdin());
       if (!content) {
-        print(chalk.dim('Tip: Pass template content via --content or pipe via stdin'));
+        throw new Error('Template content is required (use --content or pipe via stdin)');
       }
 
       const spinner = ora('Creating template...').start();

@@ -30,6 +30,10 @@ postsCommand
       spinner.stop();
 
       if (posts.length === 0) {
+        if (options.json) {
+          printJson([]);
+          return;
+        }
         print(chalk.dim('No posts found.'));
         return;
       }
