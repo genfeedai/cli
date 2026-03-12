@@ -3,6 +3,11 @@ import { z } from 'zod';
 export const profileSchema = z.object({
   activeBrand: z.string().optional(),
   activePersona: z.string().optional(),
+  agent: z
+    .object({
+      lastThreadIdByOrganization: z.record(z.string(), z.string()).default({}),
+    })
+    .default({ lastThreadIdByOrganization: {} }),
   apiKey: z.string().optional(),
   apiUrl: z.string().url().default('https://api.genfeed.ai/v1'),
   darkroomApiPort: z.number().default(8189),
@@ -23,18 +28,9 @@ export type Profile = z.infer<typeof profileSchema>;
 
 export const configSchema = z.object({
   activeProfile: z.string().default('default'),
-  profiles: z.record(z.string(), profileSchema).default({
-    default: {
-      apiUrl: 'https://api.genfeed.ai/v1',
-      darkroomApiPort: 8189,
-      darkroomHost: '100.106.229.81',
-      defaults: {
-        imageModel: 'imagen-4',
-        videoModel: 'google-veo-3',
-      },
-      role: 'user',
-    },
-  }),
+  profiles: z.record(z.string(), profileSchema).default(() => ({
+    default: profileSchema.parse({}),
+  })),
 });
 
 export type Config = z.infer<typeof configSchema>;

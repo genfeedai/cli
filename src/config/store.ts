@@ -78,6 +78,7 @@ export function resolveProfile(
 export function mergeProfileWithRuntime(profile: Profile, runtime: Partial<Profile>): Profile {
   return {
     ...profile,
+    agent: runtime.agent ?? profile.agent,
     apiKey: runtime.apiKey ?? profile.apiKey,
     apiUrl: runtime.apiUrl ?? profile.apiUrl,
     darkroomApiPort: runtime.darkroomApiPort ?? profile.darkroomApiPort,
@@ -184,6 +185,72 @@ export async function setOrganizationId(
   profileName?: string
 ): Promise<void> {
   await setProfileField('organizationId', organizationId, profileName);
+}
+
+function resolveAgentThreadStorageKey(organizationId?: string): string {
+  return organizationId || 'default';
+}
+
+export async function getLastAgentThreadId(
+  organizationId?: string,
+  profileName?: string
+): Promise<string | undefined> {
+  const config = await loadConfig();
+  const runtime = readRuntimeOverrides();
+  const { profile } = resolveProfile(config, profileName);
+  const resolvedProfile = mergeProfileWithRuntime(profile, runtime);
+  return resolvedProfile.agent.lastThreadIdByOrganization[
+    resolveAgentThreadStorageKey(organizationId ?? resolvedProfile.organizationId)
+  ];
+}
+
+export async function setLastAgentThreadId(
+  threadId: string,
+  organizationId?: string,
+  profileName?: string
+): Promise<void> {
+  const config = await loadConfig();
+  const runtime = readRuntimeOverrides();
+  const { name, profile } = resolveProfile(config, profileName);
+  const resolvedProfile = mergeProfileWithRuntime(profile, runtime);
+  const storageKey = resolveAgentThreadStorageKey(organizationId ?? resolvedProfile.organizationId);
+
+  config.profiles[name] = {
+    ...profile,
+    agent: {
+      ...profile.agent,
+      lastThreadIdByOrganization: {
+        ...profile.agent.lastThreadIdByOrganization,
+        [storageKey]: threadId,
+      },
+    },
+  };
+
+  await saveConfig(config);
+}
+
+export async function clearLastAgentThreadId(
+  organizationId?: string,
+  profileName?: string
+): Promise<void> {
+  const config = await loadConfig();
+  const runtime = readRuntimeOverrides();
+  const { name, profile } = resolveProfile(config, profileName);
+  const resolvedProfile = mergeProfileWithRuntime(profile, runtime);
+  const storageKey = resolveAgentThreadStorageKey(organizationId ?? resolvedProfile.organizationId);
+
+  const lastThreadIdByOrganization = { ...profile.agent.lastThreadIdByOrganization };
+  delete lastThreadIdByOrganization[storageKey];
+
+  config.profiles[name] = {
+    ...profile,
+    agent: {
+      ...profile.agent,
+      lastThreadIdByOrganization,
+    },
+  };
+
+  await saveConfig(config);
 }
 
 export async function setRole(role: 'user' | 'admin', profileName?: string): Promise<void> {

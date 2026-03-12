@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { get, post, requireAuth } from '../../src/api/client.js';
 import { AuthError } from '../../src/utils/errors.js';
 
 // Mock config store
 const mockApiKey = vi.fn<[], string | undefined>();
 const mockApiUrl = vi.fn<[], string>();
 
-vi.mock('../../src/config/store.js', () => ({
+vi.mock('@/config/store.js', () => ({
   getApiKey: () => mockApiKey(),
   getApiUrl: () => mockApiUrl(),
 }));
@@ -21,10 +20,18 @@ vi.mock('ofetch', () => ({
 }));
 
 describe('api/client', () => {
-  beforeEach(() => {
+  let get: typeof import('../../src/api/client.js').get;
+  let post: typeof import('../../src/api/client.js').post;
+  let requireAuth: typeof import('../../src/api/client.js').requireAuth;
+
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockApiUrl.mockReturnValue('https://api.genfeed.ai/v1');
     mockApiKey.mockReturnValue(undefined);
+    const client = await import(`../../src/api/client.ts?test-client=${Date.now()}`);
+    get = client.get;
+    post = client.post;
+    requireAuth = client.requireAuth;
   });
 
   describe('requireAuth', () => {

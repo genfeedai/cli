@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { createInterface } from 'node:readline/promises';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { batchCommand } from './commands/batch.js';
@@ -23,12 +22,14 @@ import { publishCommand } from './commands/publish.js';
 import { scheduleCommand } from './commands/schedule.js';
 import { statusCommand } from './commands/status.js';
 import { templateCommand } from './commands/template.js';
+import { threadsCommand } from './commands/threads.js';
+import { toolsCommand } from './commands/tools.js';
 import { trainCommand } from './commands/train.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { workflowCommand } from './commands/workflow.js';
 import { getRole } from './config/store.js';
+import { runAgentShell } from './shell/agent-shell.js';
 import { formatError, formatHeader, print } from './ui/theme.js';
-import { setReplMode } from './utils/errors.js';
 
 const BANNER = chalk.hex('#7C3AED').bold(`
      ██████  ███████
@@ -40,7 +41,6 @@ const BANNER = chalk.hex('#7C3AED').bold(`
 
 const program = new Command();
 
-// --- User commands (visible to all) ---
 program
   .name('gf')
   .description('Unified CLI for Genfeed.ai')
@@ -52,6 +52,7 @@ program
   .addCommand(generateCommand)
   .addCommand(statusCommand)
   .addCommand(chatCommand)
+  .addCommand(threadsCommand)
   .addCommand(workflowCommand)
   .addCommand(publishCommand)
   .addCommand(libraryCommand)
@@ -63,9 +64,9 @@ program
   .addCommand(scheduleCommand)
   .addCommand(performanceCommand)
   .addCommand(postsCommand)
-  .addCommand(configCommand);
+  .addCommand(configCommand)
+  .addCommand(toolsCommand);
 
-// --- Admin commands (hidden from --help for regular users) ---
 program
   .addCommand(darkroomCommand)
   .addCommand(trainCommand)
@@ -73,7 +74,6 @@ program
   .addCommand(captionCommand)
   .addCommand(datasetCommand);
 
-// Prevent Commander from calling process.exit() — we handle exits ourselves
 program.exitOverride();
 
 async function printBanner(): Promise<void> {
@@ -97,7 +97,8 @@ async function printHelp(): Promise<void> {
   print('  brands         Manage brands');
   print('  generate       Generate AI content (image, video, article)');
   print('  status         Check the status of a generation job');
-  print('  chat           Start an interactive agent chat session');
+  print('  chat           Start the interactive agent shell');
+  print('  threads        List, inspect, archive, and resume agent threads');
   print('  workflow       Manage and execute workflows');
   print('  publish        Publish content to social media');
   print('  library        Browse content library');
@@ -108,8 +109,9 @@ async function printHelp(): Promise<void> {
   print('  insights       AI-powered content insights');
   print('  schedule       Content scheduling and calendar');
   print('  performance    Content performance analytics');
-  print('  posts          Manage published/scheduled posts');
+  print('  posts          Manage published and scheduled posts');
   print('  config         Manage CLI configuration');
+  print('  tools          List canonical agent tools available in the CLI shell');
 
   if (role === 'admin') {
     print();
@@ -123,133 +125,30 @@ async function printHelp(): Promise<void> {
 
   print();
   print(chalk.dim('  Run `gf <command> --help` for command details'));
-  print(chalk.dim('  Run `gf` with no args for interactive mode'));
+  print(chalk.dim('  Run `gf` with no args for the interactive agent shell'));
 }
 
-// --- Interactive REPL ---
 async function startRepl(): Promise<void> {
-  setReplMode(true);
   await printBanner();
   await printHelp();
   print();
-
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const prompt = chalk.hex('#7C3AED')('gf') + chalk.dim(' > ');
-
-  while (true) {
-    let line: string;
-    try {
-      line = await rl.question(prompt);
-    } catch {
-      // EOF or Ctrl+C
-      break;
-    }
-
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    // Exit commands
-    if (trimmed === 'exit' || trimmed === 'quit' || trimmed === 'q') {
-      print(chalk.dim('Goodbye!'));
-      break;
-    }
-
-    // Help
-    if (trimmed === 'help' || trimmed === '?') {
-      await printHelp();
-      continue;
-    }
-
-    // Strip leading / for REPL slash-command style
-    const input = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
-
-    // Parse and execute as a gf command
-    const args = parseReplInput(input);
-
-    try {
-      await program.parseAsync(args, { from: 'user' });
-    } catch (error) {
-      if (error instanceof Error) {
-        const code = 'code' in error ? (error as { code: string }).code : '';
-        // Swallow Commander's help/version exits — they already printed output
-        if (code === 'commander.helpDisplayed' || code === 'commander.version') {
-          continue;
-        }
-        if (error.message.includes('unknown command') || code === 'commander.unknownCommand') {
-          print(formatError(`Unknown command: ${args[0]}`));
-          print(chalk.dim('Type `help` to see available commands'));
-        } else {
-          console.error(formatError(error.message));
-        }
-      }
-    }
-
-    print(); // Spacing between commands
-  }
-
-  rl.close();
-  process.exit(0);
+  await runAgentShell();
 }
 
-/**
- * Parse REPL input into argv-style array.
- * Handles quoted strings: /generate image "a beach photo of quincy"
- */
-function parseReplInput(input: string): string[] {
-  const args: string[] = [];
-  let current = '';
-  let inQuote = false;
-  let quoteChar = '';
-
-  for (const char of input) {
-    if (inQuote) {
-      if (char === quoteChar) {
-        inQuote = false;
-        if (current) {
-          args.push(current);
-          current = '';
-        }
-      } else {
-        current += char;
-      }
-    } else if (char === '"' || char === "'") {
-      inQuote = true;
-      quoteChar = char;
-    } else if (char === ' ' || char === '\t') {
-      if (current) {
-        args.push(current);
-        current = '';
-      }
-    } else {
-      current += char;
-    }
-  }
-
-  if (current) args.push(current);
-  return args;
-}
-
-// --- Main ---
 if (process.argv.length <= 2) {
-  // No command provided — launch interactive REPL
   startRepl().catch((error) => {
     console.error(formatError(`Fatal: ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   });
 } else {
-  // Direct command execution: gf <command> [args]
   program.parseAsync().catch((error) => {
     if (error instanceof Error && 'code' in error) {
-      // Commander error (help, version, unknown command)
       const code = (error as { code: string }).code;
       if (code === 'commander.helpDisplayed' || code === 'commander.version') {
         process.exit(0);
       }
     }
+
     console.error(formatError(error instanceof Error ? error.message : String(error)));
     process.exit(1);
   });

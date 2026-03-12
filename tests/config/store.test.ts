@@ -34,7 +34,8 @@ function makeConfigJson(profileOverrides: Record<string, unknown> = {}) {
 describe('config/store', () => {
   beforeEach(async () => {
     mockFileSystem.content = null;
-    vi.resetModules();
+    const { clearConfigCache } = await import('../../src/config/store.js');
+    clearConfigCache();
     delete process.env.GENFEED_API_KEY;
     delete process.env.GENFEED_API_URL;
     delete process.env.GENFEED_TOKEN;
@@ -201,6 +202,34 @@ describe('config/store', () => {
       process.env.GENFEED_API_URL = 'https://env.api.com/v1';
       const { getApiUrl } = await import('../../src/config/store.js');
       expect(await getApiUrl()).toBe('https://env.api.com/v1');
+    });
+  });
+
+  describe('agent thread persistence', () => {
+    it('stores and retrieves the last thread for an organization', async () => {
+      mockFileSystem.content = makeConfigJson({ organizationId: 'org-123' });
+      const { getLastAgentThreadId, setLastAgentThreadId } = await import(
+        '../../src/config/store.js'
+      );
+
+      await setLastAgentThreadId('thread-123');
+
+      expect(await getLastAgentThreadId()).toBe('thread-123');
+      expect(await getLastAgentThreadId('org-123')).toBe('thread-123');
+    });
+
+    it('clears the stored thread for an organization', async () => {
+      mockFileSystem.content = makeConfigJson({
+        agent: { lastThreadIdByOrganization: { 'org-123': 'thread-123' } },
+        organizationId: 'org-123',
+      });
+      const { clearLastAgentThreadId, getLastAgentThreadId } = await import(
+        '../../src/config/store.js'
+      );
+
+      await clearLastAgentThreadId();
+
+      expect(await getLastAgentThreadId()).toBeUndefined();
     });
   });
 });
